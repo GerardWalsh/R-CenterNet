@@ -22,6 +22,14 @@ import glob
 import PIL.Image
 import os,sys
 import math
+
+def to_deg(radz):
+    # math.pi rad = 180 deg
+    return math.pi / 180
+
+def to_rad(deg):
+    # math.pi rad = 180 deg
+    return 180 / math.pi
  
 class PascalVOC2coco(object):
     def __init__(self, xml=[], save_json_path='./new.json'):
@@ -44,7 +52,8 @@ class PascalVOC2coco(object):
     def data_transfer(self):
         for num, json_file in enumerate(self.xml):
             # 进度输出
-            sys.stdout.write('\r>> Converting image %d/%d' % (
+            print('XML', self.xml)
+            sys.stdout.write('\r>> Converting image %d/%d \n' % (
                 num + 1, len(self.xml)))
             sys.stdout.flush()
             self.json_file = json_file
@@ -74,8 +83,18 @@ class PascalVOC2coco(object):
                         y1 = float(self.ob[2])
                         w = float(self.ob[3])
                         h = float(self.ob[4])
-                        angle = float(self.ob[5])*180/math.pi
-                        angle = angle if angle < 180 else angle-180
+                        angle = float(self.ob[5]) # labels are in radians, convert them to degrees.
+
+                        if angle > math.pi:
+                            print('We have a large rotation: ', angle)
+                            angle = -(2. * math.pi - angle)
+                            print('Converted to: ', angle)
+
+                        # if angle > 1.0:
+                        #     print('Big angle!!! ')
+
+                        angle = np.interp(angle, (-1, 1), (0, 1))
+                        print('Angle', angle, '\n')
                         
                         self.rectangle = [x1, y1, x1+w, y1+w]
                         self.bbox = [x1, y1, w, h, angle]  # COCO 对应格式[x,y,w,h]
@@ -86,7 +105,7 @@ class PascalVOC2coco(object):
                         flag = 0
                     elif f_name == 1:
                         key = p.split('>')[0].split('<')[1]
-                        print(key)
+                        # print(key)
                         if key == 'name':
                             self.ob.append(p.split('>')[1].split('<')[0])
                         if key == 'cx':
@@ -201,7 +220,7 @@ class PascalVOC2coco(object):
         json.dump(self.data_coco, open(self.save_json_path, 'w'), indent=4)  # indent=4 更加美观显示
  
  
-xml_file = glob.glob('./Annotations/*.xml')
+xml_file = glob.glob('../data/defect/annotations_train/*.xml')
 # xml_file=['./Annotations/000032.xml']
 #xml_file=['00000007_05499_d_0000037.xml']
 PascalVOC2coco(xml_file, 'train.json')

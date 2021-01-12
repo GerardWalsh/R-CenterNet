@@ -10,18 +10,20 @@ import torch
 import numpy as np
 from Loss import CtdetLoss
 from torch.utils.data import DataLoader
+from torchsummary import summary
 from dataset import ctDataset
 
 sys.path.append(r'./backbone')
-#from resnet import ResNet  
-#from resnet_dcn import ResNet
+# from resnet import ResNet  
+from resnet_dcn import ResNet
 #from dlanet import DlaNet
 from dlanet_dcn import DlaNet
 
 os.environ["CUDA_VISIBLE_DEVICES"] = '0' 
 use_gpu = torch.cuda.is_available()
-#model = ResNet(34)
+# model = ResNet(34)
 model = DlaNet(34)
+
 print('cuda', torch.cuda.current_device(), torch.cuda.device_count())
 
 loss_weight={'hm_weight':1,'wh_weight':0.1,'ang_weight':0.1,'reg_weight':0.1}
@@ -30,10 +32,13 @@ criterion = CtdetLoss(loss_weight)
 device = torch.device("cuda")
 if use_gpu:
     model.cuda()
+    
+# summary(model, input_size=(3, 512, 512))
+
 model.train()
 
-learning_rate = 1.25e-4
-num_epochs = 150
+learning_rate = 1e-4
+num_epochs = 50
 
 # different learning rate
 params=[]
@@ -99,6 +104,6 @@ for epoch in range(num_epochs):
     
     if best_test_loss > validation_loss:
         best_test_loss = validation_loss
-        print('get best test loss %.5f' % best_test_loss)
+        print('Got best test loss %.5f' % best_test_loss)
         torch.save(model.state_dict(),'best.pth')
     torch.save(model.state_dict(),'last.pth')

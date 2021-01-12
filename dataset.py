@@ -21,7 +21,7 @@ class ctDataset(data.Dataset):
     std  = np.array([0.3001546018824507, 0.28620901391179554, 0.3014112676161966], dtype=np.float32).reshape(1, 1, 3)
 
     def __init__(self, data_dir='data', split='train'):
-        self.data_dir = os.path.join(data_dir, 'airplane')
+        self.data_dir = os.path.join(data_dir, 'defect')
         self.img_dir = os.path.join(self.data_dir, 'images')
         try:
             if split == 'train':
@@ -72,6 +72,9 @@ class ctDataset(data.Dataset):
             s = max(img.shape[0], img.shape[1]) * 1.0  
             input_h, input_w = 512, 512 
 
+        # print(input_w)
+        # print(input_h)
+
         trans_input = get_affine_transform(c, s, 0, [input_w, input_h])
         inp = cv2.warpAffine(img, trans_input,(input_w, input_h),flags=cv2.INTER_LINEAR) 
         inp = (inp.astype(np.float32) / 255.)  
@@ -79,10 +82,14 @@ class ctDataset(data.Dataset):
         #归一化
         inp = (inp - self.mean) / self.std
         inp = inp.transpose(2, 0, 1) 
-        
+
+        # print('inp shape', inp.shape)
+
         down_ratio = 4 
         output_h = input_h // down_ratio
+        # print('Height', output_h)
         output_w = input_w // down_ratio
+        # print('Width', output_w)
         num_classes = self.num_classes 
         trans_output = get_affine_transform(c, s, 0, [output_w, output_h])  
 
@@ -120,31 +127,38 @@ class ctDataset(data.Dataset):
         if reg_offset_flag:
             ret.update({'reg': reg})
         return ret
-    
+
+
 def grayscale(image):
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
 
 def lighting_(data_rng, image, alphastd, eigval, eigvec):
     alpha = data_rng.normal(scale=alphastd, size=(3, ))
     image += np.dot(eigvec, eigval * alpha)
-    
+
+
 def blend_(alpha, image1, image2):
     image1 *= alpha
     image2 *= (1 - alpha)
     image1 += image2
-    
+
+
 def saturation_(data_rng, image, gs, gs_mean, var):
     alpha = 1. + data_rng.uniform(low=-var, high=var)
     blend_(alpha, image, gs[:, :, None])
-    
+
+
 def brightness_(data_rng, image, gs, gs_mean, var):
     alpha = 1. + data_rng.uniform(low=-var, high=var)
     image *= alpha
-    
+
+
 def contrast_(data_rng, image, gs, gs_mean, var):
     alpha = 1. + data_rng.uniform(low=-var, high=var)
     blend_(alpha, image, gs_mean)
-# 颜色扩充
+
+
 def color_aug(data_rng, image, eig_val, eig_vec):
     functions = [brightness_, contrast_, saturation_]
     random.shuffle(functions)
@@ -153,10 +167,12 @@ def color_aug(data_rng, image, eig_val, eig_vec):
     for f in functions:
         f(data_rng, image, gs, gs_mean, 0.4)
     lighting_(data_rng, image, 0.1, eig_val, eig_vec)
-    
+
+
 def get_3rd_point(a, b):
     direct = a - b
     return b + np.array([-direct[1], direct[0]], dtype=np.float32)
+
 
 def get_dir(src_point, rot_rad):
     sn, cs = np.sin(rot_rad), np.cos(rot_rad)
@@ -164,7 +180,8 @@ def get_dir(src_point, rot_rad):
     src_result[0] = src_point[0] * cs - src_point[1] * sn
     src_result[1] = src_point[0] * sn + src_point[1] * cs
     return src_result    
-    
+
+
 def get_affine_transform(center,scale,rot, output_size,
                          shift=np.array([0, 0], dtype=np.float32),inv=0):
     if not isinstance(scale, np.ndarray) and not isinstance(scale, list):
@@ -195,12 +212,14 @@ def get_affine_transform(center,scale,rot, output_size,
         trans = cv2.getAffineTransform(np.float32(src), np.float32(dst))
     return trans
 
+
 def gaussian2D(shape, sigma=1):
     m, n = [(ss - 1.) / 2. for ss in shape]
     y, x = np.ogrid[-m:m+1,-n:n+1]
     h = np.exp(-(x * x + y * y) / (2 * sigma * sigma))
     h[h < np.finfo(h.dtype).eps * h.max()] = 0
     return h
+
 
 def draw_umich_gaussian(heatmap, center, radius, k=1):
     diameter = 2 * radius + 1
@@ -217,16 +236,19 @@ def draw_umich_gaussian(heatmap, center, radius, k=1):
     if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0: # TODO debug
         np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
     return heatmap
-    
+
+
 def coco_box_to_bbox(box):
     bbox = np.array([box[0] - box[2]/2, box[1] - box[3]/2, box[0] + box[2]/2, box[1] + box[3]/2],dtype=np.float32)
     ang = float(box[4])
     return bbox, ang
 
+
 def affine_transform(pt, t):
     new_pt = np.array([pt[0], pt[1], 1.], dtype=np.float32).T
     new_pt = np.dot(t, new_pt)
     return new_pt[:2]
+
 
 def gaussian_radius(det_size, min_overlap=0.7):
     height, width = det_size
@@ -246,6 +268,7 @@ def gaussian_radius(det_size, min_overlap=0.7):
     sq3 = np.sqrt(b3 ** 2 - 4 * a3 * c3)
     r3  = (b3 + sq3) / 2
     return min(r1, r2, r3)
+
 
 def draw_dense_reg(regmap, heatmap, center, value, radius, is_offset=False):
     diameter = 2 * radius + 1

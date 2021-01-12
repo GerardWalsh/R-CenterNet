@@ -85,7 +85,6 @@ class Bottleneck(nn.Module):
         return out
 
 
-
 class Creat_ResNet(nn.Module):
     def __init__(self, block, layers, heads, head_conv, plot, **kwargs):
         
@@ -202,7 +201,6 @@ resnet_spec = {18: (BasicBlock, [2, 2, 2, 2]),
                50: (Bottleneck, [3, 4, 6, 3]),
                101: (Bottleneck, [3, 4, 23, 3]),
                152: (Bottleneck, [3, 8, 36, 3])}
-
 
 def ResNet(layer_num, heads = {'hm': 1, 'wh': 2, 'ang':1, 'reg': 2}, head_conv=256, plot=False):
     assert layer_num in [18,34,50,101,152], \

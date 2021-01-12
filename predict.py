@@ -4,22 +4,26 @@ Created on Mon Jan  6 22:20:07 2020
 
 @author: Lim
 """
-import os
+import os, sys
 import cv2
 import math
 import time
 import torch
 import numpy as np
 import torch.nn as nn
-from resnet_dcn import ResNet
+from PIL import Image, ImageDraw
+# from resnet_dcn import ResNet
+
+sys.path.append(r'./backbone')
 from dlanet_dcn import DlaNet
 from Loss import _gather_feat
-from PIL import Image, ImageDraw
+
 from dataset import get_affine_transform
 from Loss import _transpose_and_gather_feat
 
 
-def draw(filename,result):
+def draw(filename, res):
+    # print(filename)
     img = Image.open(filename)
     w, h=img.size
     draw = ImageDraw.Draw(img)
@@ -30,6 +34,7 @@ def draw(filename,result):
         y=int(result[1])
         height=int(result[2])
         width=int(result[3])
+        print('Anglezs', result[4])
         anglePi = result[4]/180 * math.pi
         anglePi = anglePi if anglePi <= math.pi else anglePi - math.pi
  
@@ -82,6 +87,7 @@ def pre_process(image):
     inp_image = ((inp_image / 255. - mean) / std).astype(np.float32)
 
     images = inp_image.transpose(2, 0, 1).reshape(1, 3, inp_height, inp_width) # 三维reshape到4维，（1，3，512，512） 
+    # print(inp_image)
     
     images = torch.from_numpy(images)
     meta = {'c': c, 's': s, 
@@ -223,8 +229,9 @@ if __name__ == '__main__':
     model.load_state_dict(torch.load('best.pth'))
     model.eval()
     model.cuda()
-    for image_name in [os.path.join('imgs',f) for f in os.listdir('imgs')]:
+    for image_name in [os.path.join('imgz',f) for f in os.listdir('imgz')]:
 #        image_name = 'data/images/011.jpg'
+        # print(image_name)
         if image_name.split('.')[-1] == 'jpg':
             image = cv2.imread(image_name)
             images, meta = pre_process(image)

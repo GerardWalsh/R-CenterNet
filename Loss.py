@@ -89,14 +89,28 @@ class CtdetLoss(torch.nn.Module):
         wh_weight = self.loss_weight['wh_weight']
         reg_weight = self.loss_weight['reg_weight']
         ang_weight = self.loss_weight['ang_weight']
+
+        # print(ang_weight)
+        # print('target angle', target_tensor['ang'])
+
 #        print(pred_tensor['hm'].size())
+
         hm_loss, wh_loss, off_loss, ang_loss = 0, 0, 0, 0
+
         pred_tensor['hm'] = _sigmoid(pred_tensor['hm'])
 #        print(target_tensor['hm'].size())
+
         hm_loss += self.crit(pred_tensor['hm'], target_tensor['hm'])
+
         if ang_weight > 0:
             pred_tensor['ang'] = _relu(pred_tensor['ang'])
             ang_loss += self.crit_wh(pred_tensor['ang'], target_tensor['reg_mask'],target_tensor['ind'], target_tensor['ang'])  
+        else:
+          print('Negative angle!')
+          ang_weight = torch.abs(ang_weight)
+          pred_tensor['ang'] = _relu(pred_tensor['ang'])
+          ang_loss += self.crit_wh(pred_tensor['ang'], target_tensor['reg_mask'],target_tensor['ind'], target_tensor['ang'])  
+
         if wh_weight > 0:
             wh_loss += self.crit_wh(pred_tensor['wh'], target_tensor['reg_mask'],target_tensor['ind'], target_tensor['wh']) 
         if reg_weight > 0:
