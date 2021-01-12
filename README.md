@@ -34,7 +34,7 @@ At the request of readers, 2.0 was subsequently updated：2.0
     * ![image](ret/DLADCN.jpg)
 
 #### notes
- * Refactored the original [code](https://github.com/xingyizhou/centernet) to make codes more concise.
+ * Refactored the original [code](https://github.com/xingyizhou/centernet) to make code more concise.
  * To complie dcn and configure the environment, refer to the original code of [CenterNet](https://github.com/xingyizhou/centernet).
  * For data processing and more details, refer to [here](https://zhuanlan.zhihu.com/p/163696749)
  * torch version==1.2，don't use version==0.4!
