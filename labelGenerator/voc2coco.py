@@ -3,14 +3,10 @@
 # Created on Sat Feb 29 21:16:02 2020
 # @author: Lim
 # 
-# English: 1.use this tool to label your own picture:
+# 1.use this tool to label your own picture:
 #            https://link.zhihu.com/?target=https%3A//github.com/chinakook/labelImg2
 #          2.use this function PascalVOC2coco to convert all "*.xml" file label produced by 1. 
 #            to a .josn file, also is train data of R-CenterNet.  
-# 中文：   1.先用这个工具对你自己的数据打标签 
-#            https://link.zhihu.com/?target=https%3A//github.com/chinakook/labelImg2
-#          2.用PascalVOC2coco将你打完标签的所有.xml文件合并成一个json文件，也就是R-CenterNet需要的
-#            训练数据
 # =============================================================================
 # -*- coding:utf-8 -*-
 # !/usr/bin/env python
@@ -22,20 +18,12 @@ import glob
 import PIL.Image
 import os,sys
 import math
-
-def to_deg(radz):
-    # math.pi rad = 180 deg
-    return math.pi / 180
-
-def to_rad(deg):
-    # math.pi rad = 180 deg
-    return 180 / math.pi
  
 class PascalVOC2coco(object):
     def __init__(self, xml=[], save_json_path='./new.json'):
         '''
-        :param xml: 所有Pascal VOC的xml文件路径组成的列表
-        :param save_json_path: json保存位置
+        :param xml: Pascal VOC xml
+        :param save_json_path: json
         '''
         self.xml = xml
         self.save_json_path = save_json_path
@@ -49,10 +37,9 @@ class PascalVOC2coco(object):
         self.ob = []
         self.save_json()
  
-    def data_transfer(self):
+    def data_transfer(self, box_count, neg_angle_count):
         for num, json_file in enumerate(self.xml):
-            # 进度输出
-            print('XML', self.xml)
+            # print('XML', self.xml)
             sys.stdout.write('\r>> Converting image %d/%d \n' % (
                 num + 1, len(self.xml)))
             sys.stdout.flush()
@@ -83,21 +70,24 @@ class PascalVOC2coco(object):
                         y1 = float(self.ob[2])
                         w = float(self.ob[3])
                         h = float(self.ob[4])
-                        angle = float(self.ob[5]) # labels are in radians, convert them to degrees.
+                        angle = float(self.ob[5]) # labels are in radians.
 
                         if angle > math.pi:
-                            print('We have a large rotation: ', angle)
+                            # print('We have a large rotation: ', angle)
                             angle = -(2. * math.pi - angle)
-                            print('Converted to: ', angle)
+                            # print('Converted to: ', angle)
 
-                        # if angle > 1.0:
-                        #     print('Big angle!!! ')
+                        if angle < 0.0:
+                            neg_angle_count += 1
+                            # angle = 0.0
+                            # print('Big angle!!! ')
 
-                        angle = np.interp(angle, (-1, 1), (0, 1))
-                        print('Angle', angle, '\n')
+                        # angle = np.interp(angle, (-1*math.pi, math.pi), (0, 2*math.pi))
+                        # print('Angle', angle, '\n')
                         
                         self.rectangle = [x1, y1, x1+w, y1+w]
                         self.bbox = [x1, y1, w, h, angle]  # COCO 对应格式[x,y,w,h]
+                        box_count+=1
  
                         self.annotations.append(self.annotation())
                         self.annID += 1
@@ -119,10 +109,10 @@ class PascalVOC2coco(object):
                         if key == 'angle':
                             self.ob.append(p.split('>')[1].split('<')[0])
                             flag = 1
- 
- 
+
         sys.stdout.write('\n')
         sys.stdout.flush()
+        return box_count, neg_angle_count
  
     def image(self):
         image = {}
@@ -135,7 +125,7 @@ class PascalVOC2coco(object):
     def categorie(self):
         categorie = {}
         categorie['supercategory'] = self.supercategory
-        categorie['id'] = len(self.label) + 1  # 0 默认为背景
+        categorie['id'] = len(self.label) + 1  # 0 
         categorie['name'] = self.supercategory
         return categorie
  
@@ -166,7 +156,6 @@ class PascalVOC2coco(object):
             mask[rectangle[1]:rectangle[3], rectangle[0]:rectangle[2]] = mask_1[rectangle[1]:rectangle[3],
                                                                          rectangle[0]:rectangle[2]]
  
-            # 计算矩形中点像素值
             mean_x = (rectangle[0] + rectangle[2]) // 2
             mean_y = (rectangle[1] + rectangle[3]) // 2
  
@@ -214,9 +203,10 @@ class PascalVOC2coco(object):
         return data_coco
  
     def save_json(self):
-        self.data_transfer()
+        box_count, neg_angle_count = 0, 0
+        boxes, neg_angles = self.data_transfer(box_count, neg_angle_count)
+        print(neg_angles/boxes)
         self.data_coco = self.data2coco()
-        # 保存json文件
         json.dump(self.data_coco, open(self.save_json_path, 'w'), indent=4)  # indent=4 更加美观显示
  
  
