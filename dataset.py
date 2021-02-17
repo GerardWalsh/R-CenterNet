@@ -12,15 +12,18 @@ import random
 import numpy as np
 import torch.utils.data as data
 import pycocotools.coco as coco
+from utils.boxe import Rectangle
+from PIL import Image
+
 
 
 class ctDataset(data.Dataset):
     num_classes = 1
-    default_resolution = [512,512]
-    mean = np.array([0.5194416012442385,0.5378052387430711,0.533462090585746], dtype=np.float32).reshape(1, 1, 3)
-    std  = np.array([0.3001546018824507, 0.28620901391179554, 0.3014112676161966], dtype=np.float32).reshape(1, 1, 3)
+    default_resolution = [480,480]
+    # mean = np.array([0.5194416012442385,0.5378052387430711,0.533462090585746], dtype=np.float32).reshape(1, 1, 3)
+    # std  = np.array([0.3001546018824507, 0.28620901391179554, 0.3014112676161966], dtype=np.float32).reshape(1, 1, 3)
 
-    def __init__(self, data_dir='data', split='train'):
+    def __init__(self, data_dir='data', split='train', transform=None):
         self.data_dir = os.path.join(data_dir, 'defect')
         self.img_dir = os.path.join(self.data_dir, 'images')
         try:
@@ -47,21 +50,51 @@ class ctDataset(data.Dataset):
         self.coco = coco.COCO(self.annot_path)
         self.images = self.coco.getImgIds()
         self.num_samples = len(self.images)
+        # self.aug_count = len(transforms)
+        self.transforms = transform
+        print('Number of samples', self.num_samples)
 
         
     def __len__(self):
+        # if using passing transforms to CtDataset instantiation, adjust num_samples by len(transforms)*self.num_samples
         return self.num_samples
     
     def __getitem__(self, index):
-        img_id = self.images[index]
+        # print('Index', index)
+        new_index = index % self.num_samples
+        # print('New index', index)
+        # print('\n Getting frame {} from dataset of length {}'.format(index, self.num_samples))
+        img_id = self.images[new_index]
         file_name = self.coco.loadImgs(ids=[img_id])[0]['file_name']
         img_path = os.path.join(self.img_dir, file_name)
         ann_ids = self.coco.getAnnIds(imgIds=[img_id])
         anns = self.coco.loadAnns(ids=ann_ids) 
         num_objs = min(len(anns), self.max_objs)
-        img = cv2.imread(img_path)  
-        height, width = img.shape[0], img.shape[1]  
-        c = np.array([img.shape[1] / 2., img.shape[0] / 2.], dtype=np.float32)  # 中心点
+        img = cv2.imread(img_path)
+        # print('Image path', img_path)
+        # print('IMgae shape', img.shape)
+
+        if (self.transforms) and (index > self.num_samples):
+            # print('jittering')
+            img = self.transforms(img)
+            # cv2.imshow('test {}'.format(index), img)
+            # cv2.waitKey()
+        if (self.transforms):
+            img = self.transforms(img)
+        else:
+            pass
+            # print("normal image")
+
+        # for i in range(len(anns)):
+        #     # print(anns[i])
+        #     re = Rectangle(*anns[i]['bbox'], img, flip=False, colour=(0, 0, 255))
+        #     re.draw(img)
+
+        # cv2.imshow('Traing', img)
+        # cv2.waitKey()
+
+        height, width = img.shape[0:2]
+        c = np.array([width / 2., height / 2.], dtype=np.float32)  # 中心点
     
         keep_res = False #
         if keep_res:
@@ -69,27 +102,19 @@ class ctDataset(data.Dataset):
             input_w = (width | 31) + 1
             s = np.array([input_w, input_h], dtype=np.float32)
         else:
-            s = max(img.shape[0], img.shape[1]) * 1.0  
+            s = max(height, width) * 1.0  
             input_h, input_w = 512, 512 
-
-        # print(input_w)
-        # print(input_h)
 
         trans_input = get_affine_transform(c, s, 0, [input_w, input_h])
         inp = cv2.warpAffine(img, trans_input,(input_w, input_h),flags=cv2.INTER_LINEAR) 
         inp = (inp.astype(np.float32) / 255.)  
 
-        #归一化
-        inp = (inp - self.mean) / self.std
+
+        # inp = (inp - self.mean) / self.std
         inp = inp.transpose(2, 0, 1) 
-
-        # print('inp shape', inp.shape)
-
         down_ratio = 4 
         output_h = input_h // down_ratio
-        # print('Height', output_h)
         output_w = input_w // down_ratio
-        # print('Width', output_w)
         num_classes = self.num_classes 
         trans_output = get_affine_transform(c, s, 0, [output_w, output_h])  
 
@@ -101,15 +126,14 @@ class ctDataset(data.Dataset):
         
         reg_mask = np.zeros((self.max_objs), dtype=np.uint8) 
         draw_gaussian = draw_umich_gaussian
-        for k in range(num_objs):  # num_objs图中标记物数目  
-            ann = anns[k]  # 第几个标记物的标签
+        for k in range(num_objs):  # num_objs  
+            ann = anns[k]  
             bbox, an = coco_box_to_bbox(ann['bbox']) 
             cls_id = int(self.cat_ids[ann['category_id']]) 
-            bbox[:2] = affine_transform(bbox[:2], trans_output)    # 将box坐标转换到 128*128内的坐标
+            bbox[:2] = affine_transform(bbox[:2], trans_output)    # 将box 128*128
             bbox[2:] = affine_transform(bbox[2:], trans_output)
             bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, output_w - 1)  
             bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, output_h - 1)
-            # 上面几行都是做数据扩充和resize之后的变换，不重要
             h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
             if h > 0 and w > 0:
                 radius = gaussian_radius((math.ceil(h), math.ceil(w)))  
@@ -122,7 +146,26 @@ class ctDataset(data.Dataset):
                 ind[k] = ct_int[1] * output_w + ct_int[0]  
                 reg[k] = ct - ct_int
                 reg_mask[k] = 1
+
+        # print('inp shape', inp.shape)
+        # print('inp type', type(inp))
+
+
+
+        # # inp = inp.to_numpy()
+        # if type(inp) != np.ndarray:
+        #     inp = inp.to_numpy()
+        
+        # print('input type', inp.dtype)
+        # print('input shape', inp.shape)
+        # cv2.imshow('test {}'.format(index), inp.astype(np.int8).transpose(1, 2, 0)*255.)
+        # cv2.imshow('test {}'.format(index))
+        # key = cv2.waitKey()
+
+        # print('input type', inp.dtype)
+
         ret = {'input': inp, 'hm': hm, 'reg_mask': reg_mask, 'ind': ind, 'wh': wh, 'ang':ang}
+        # print('input type', tpyinp)
         reg_offset_flag = True #
         if reg_offset_flag:
             ret.update({'reg': reg})
