@@ -39,9 +39,10 @@ class PascalVOC2coco(object):
  
     def data_transfer(self, box_count, neg_angle_count):
         for num, json_file in enumerate(self.xml):
-            # print('XML', self.xml)
-            sys.stdout.write('\r>> Converting image %d/%d \n' % (
-                num + 1, len(self.xml)))
+            key = cv2.waitKey()
+            # print('XML path', json_file)
+            # sys.stdout.write('\r>> Converting image %d/%d \n' % (
+            #     num + 1, len(self.xml)))
             sys.stdout.flush()
             self.json_file = json_file
             self.num = num 
@@ -50,10 +51,17 @@ class PascalVOC2coco(object):
 
             with open(json_file, 'r', encoding='UTF-8') as fp:
                 flag = 0
+                redo_name = False
                 for p in fp:
+                    key = cv2.waitKey()
+                    if key == ord('q'):
+                        break
                     f_name = 1
                     if 'filename' in p:
                         self.filen_ame = p.split('>')[1].split('<')[0]
+                        if os.path.isdir(self.filen_ame):
+                            print('This is a directory: ', self.filen_ame, '\noffending xml path: ',  json_file)
+                            print(p)
                         f_name = 0
                         self.path = os.path.join(path, 'SegmentationObject', self.filen_ame.split('.')[0] + '.png')
                     if 'width' in p:
@@ -71,6 +79,7 @@ class PascalVOC2coco(object):
                         w = float(self.ob[3])
                         h = float(self.ob[4])
                         angle = float(self.ob[5]) # labels are in radians.
+                        # r = w / h
 
                         if angle > math.pi:
                             # print('We have a large rotation: ', angle)
@@ -86,7 +95,7 @@ class PascalVOC2coco(object):
                         # print('Angle', angle, '\n')
                         
                         self.rectangle = [x1, y1, x1+w, y1+w]
-                        self.bbox = [x1, y1, w, h, angle]  # COCO 对应格式[x,y,w,h]
+                        self.bbox = [x1, y1, w, h, angle]  # COCO [x,y,w,h]
                         box_count+=1
  
                         self.annotations.append(self.annotation())
@@ -119,6 +128,9 @@ class PascalVOC2coco(object):
         image['height'] = self.height
         image['width'] = self.width
         image['id'] = self.num + 1
+        # print('Saving {} as label path'.format(self.filen_ame))
+        if os.path.isdir(self.filen_ame):
+            print('This is a directory!: ', self.filen_ame)
         image['file_name'] = self.filen_ame
         return image
  
@@ -207,10 +219,12 @@ class PascalVOC2coco(object):
         boxes, neg_angles = self.data_transfer(box_count, neg_angle_count)
         print(neg_angles/boxes)
         self.data_coco = self.data2coco()
-        json.dump(self.data_coco, open(self.save_json_path, 'w'), indent=4)  # indent=4 更加美观显示
+        json.dump(self.data_coco, open(self.save_json_path, 'w'), indent=4)  # indent=4 
  
  
-xml_file = glob.glob('../data/defect/annotations_train/*.xml')
+# xml_file = glob.glob('../data/defect/annotations_val_small_aug/*.xml')
+xml_file = glob.glob('/home/gexegetic/R-CenterNet/data/defect/annotations_train/*.xml')
+# print("All xmls", xml_file)
 # xml_file=['./Annotations/000032.xml']
 #xml_file=['00000007_05499_d_0000037.xml']
-PascalVOC2coco(xml_file, 'train.json')
+PascalVOC2coco(xml_file, '/home/gexegetic/R-CenterNet/data/defect/annotations/train.json')
