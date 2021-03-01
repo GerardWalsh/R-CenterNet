@@ -59,91 +59,6 @@ class BasicBlock(nn.Module):
         return out
 
 
-# class Bottleneck(nn.Module):
-#     expansion = 2
-
-#     def __init__(self, inplanes, planes, stride=1, dilation=1):
-#         super(Bottleneck, self).__init__()
-#         expansion = Bottleneck.expansion
-#         bottle_planes = planes // expansion
-#         self.conv1 = nn.Conv2d(inplanes, bottle_planes,
-#                                kernel_size=1, bias=False)
-#         self.bn1 = nn.BatchNorm2d(bottle_planes, momentum=BN_MOMENTUM)
-#         self.conv2 = nn.Conv2d(bottle_planes, bottle_planes, kernel_size=3,
-#                                stride=stride, padding=dilation,
-#                                bias=False, dilation=dilation)
-#         self.bn2 = nn.BatchNorm2d(bottle_planes, momentum=BN_MOMENTUM)
-#         self.conv3 = nn.Conv2d(bottle_planes, planes,
-#                                kernel_size=1, bias=False)
-#         self.bn3 = nn.BatchNorm2d(planes, momentum=BN_MOMENTUM)
-#         self.relu = nn.ReLU(inplace=True)
-#         self.stride = stride
-
-#     def forward(self, x, residual=None):
-#         if residual is None:
-#             residual = x
-
-#         out = self.conv1(x)
-#         out = self.bn1(out)
-#         out = self.relu(out)
-
-#         out = self.conv2(out)
-#         out = self.bn2(out)
-#         out = self.relu(out)
-
-#         out = self.conv3(out)
-#         out = self.bn3(out)
-
-#         out += residual
-#         out = self.relu(out)
-
-#         return out
-
-
-# class BottleneckX(nn.Module):
-#     expansion = 2
-#     cardinality = 32
-
-#     def __init__(self, inplanes, planes, stride=1, dilation=1):
-#         super(BottleneckX, self).__init__()
-#         cardinality = BottleneckX.cardinality
-#         # dim = int(math.floor(planes * (BottleneckV5.expansion / 64.0)))
-#         # bottle_planes = dim * cardinality
-#         bottle_planes = planes * cardinality // 32
-#         self.conv1 = nn.Conv2d(inplanes, bottle_planes,
-#                                kernel_size=1, bias=False)
-#         self.bn1 = nn.BatchNorm2d(bottle_planes, momentum=BN_MOMENTUM)
-#         self.conv2 = nn.Conv2d(bottle_planes, bottle_planes, kernel_size=3,
-#                                stride=stride, padding=dilation, bias=False,
-#                                dilation=dilation, groups=cardinality)
-#         self.bn2 = nn.BatchNorm2d(bottle_planes, momentum=BN_MOMENTUM)
-#         self.conv3 = nn.Conv2d(bottle_planes, planes,
-#                                kernel_size=1, bias=False)
-#         self.bn3 = nn.BatchNorm2d(planes, momentum=BN_MOMENTUM)
-#         self.relu = nn.ReLU(inplace=True)
-#         self.stride = stride
-
-#     def forward(self, x, residual=None):
-#         if residual is None:
-#             residual = x
-
-#         out = self.conv1(x)
-#         out = self.bn1(out)
-#         out = self.relu(out)
-
-#         out = self.conv2(out)
-#         out = self.bn2(out)
-#         out = self.relu(out)
-
-#         out = self.conv3(out)
-#         out = self.bn3(out)
-
-#         out += residual
-#         out = self.relu(out)
-
-#         return out
-
-
 class Root(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, residual):
         super(Root, self).__init__()
@@ -389,7 +304,7 @@ class IDAUp(nn.Module):
 
 class DLAUp(nn.Module):
     def __init__(self, startp, channels, scales, in_channels=None):
-        print('DLAup')
+        # print('DLAup')
         super(DLAUp, self).__init__()
         self.startp = startp
         if in_channels is None:
@@ -414,17 +329,6 @@ class DLAUp(nn.Module):
         return out
 
 
-class Interpolate(nn.Module):
-    def __init__(self, scale, mode):
-        super(Interpolate, self).__init__()
-        self.scale = scale
-        self.mode = mode
-        
-    def forward(self, x):
-        x = F.interpolate(x, scale_factor=self.scale, mode=self.mode, align_corners=False)
-        return x
-
-
 class Creat_DlaNet(nn.Module):
     def __init__(self, base_name, heads, pretrained, plot, down_ratio, final_kernel,
                  last_level, head_conv, out_channel=0):
@@ -434,8 +338,8 @@ class Creat_DlaNet(nn.Module):
         self.first_level = int(np.log2(down_ratio))
         self.last_level = last_level
         
-        # globals()[base_name](pretrained=pretrained) 意思是在全局寻找一个叫 base_name 的函数或者类，
-        # 他的参数 pretrained 为 true
+        # globals()[base_name](pretrained=pretrained)  base_name
+        # pretrained true
         self.base = globals()[base_name](pretrained=pretrained)
         channels = self.base.channels
         scales = [2 ** i for i in range(len(channels[self.first_level:]))]
@@ -459,13 +363,13 @@ class Creat_DlaNet(nn.Module):
                     kernel_size=final_kernel, stride=1, 
                     padding=final_kernel // 2, bias=True))
               if 'hm' in head:
-                print('head:', head)
+                # print('head:', head)
                 fc[-1].bias.data.fill_(-2.19)
               else:
-                print('head:', head)
+                # print('head:', head)
                 fill_fc_weights(fc)
             else:
-              print('else')
+            #   print('else')
               fc = nn.Conv2d(channels[self.first_level], classes, 
                   kernel_size=final_kernel, stride=1, 
                   padding=final_kernel // 2, bias=True)
@@ -485,10 +389,10 @@ class Creat_DlaNet(nn.Module):
         self.ida_up(y, 0, len(y))
 
         z = {}
-        res = [] # 为了画图
+        res = []
         for head in self.heads:
             z[head] = self.__getattr__(head)(y[-1])
-            res.append(self.__getattr__(head)(y[-1])) #为了画图，不画图就返回ret
+            res.append(self.__getattr__(head)(y[-1]))
         return res if self.plot else z
         
 

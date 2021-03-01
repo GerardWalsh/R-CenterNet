@@ -12,14 +12,17 @@ class Point:
 
 class Rectangle:
 
-    def __init__(self, x, y, w, h, angle, colour=(0, 255, 0)):
+    def __init__(self, x, y, w, h, angle, image, flip = False, colour=(0, 255, 0)):
 
         self.x = x
         self.y = y
         self.w = w
         self.h = h
-        self.angle = math.degrees(angle)
+        self.angle = -1*angle if flip else angle
         self.colour = colour
+        self.imshape = image.shape[0:2]
+        self.flip=flip
+        # print(self.imshape)
 
     def dump_box(self, filename='mt.txt'):
         points = []
@@ -29,39 +32,19 @@ class Rectangle:
             
         return [val for p in points for val in points]
 
-    def draw(self, image):
-        pts = self.get_vertices_points()
+    def draw(self, image, flip=False):
+        pts = self.get_vertices_points(flip=flip)
         draw_polygon(image, pts, self.colour)
 
-    def rotate_rectangle(self, theta):
-        pt0, pt1, pt2, pt3 = self.get_vertices_points()
 
-        # Point 0
-        rotated_x = math.cos(theta) * (pt0.x - self.x) - math.sin(theta) * (pt0.y - self.y) + self.x
-        rotated_y = math.sin(theta) * (pt0.x - self.x) + math.cos(theta) * (pt0.y - self.y) + self.y
-        point_0 = Point(rotated_x, rotated_y)
-
-        # Point 1
-        rotated_x = math.cos(theta) * (pt1.x - self.x) - math.sin(theta) * (pt1.y - self.y) + self.x
-        rotated_y = math.sin(theta) * (pt1.x - self.x) + math.cos(theta) * (pt1.y - self.y) + self.y
-        point_1 = Point(rotated_x, rotated_y)
-
-        # Point 2
-        rotated_x = math.cos(theta) * (pt2.x - self.x) - math.sin(theta) * (pt2.y - self.y) + self.x
-        rotated_y = math.sin(theta) * (pt2.x - self.x) + math.cos(theta) * (pt2.y - self.y) + self.y
-        point_2 = Point(rotated_x, rotated_y)
-
-        # Point 3
-        rotated_x = math.cos(theta) * (pt3.x - self.x) - math.sin(theta) * (pt3.y - self.y) + self.x
-        rotated_y = math.sin(theta) * (pt3.x - self.x) + math.cos(theta) * (pt3.y - self.y) + self.y
-        point_3 = Point(rotated_x, rotated_y)
-
-        return point_0, point_1, point_2, point_3
-
-    def get_vertices_points(self):
+    def get_vertices_points(self, flip=False):
         x0, y0, width, height, _angle = self.x, self.y, self.w, self.h, self.angle
-        b = math.cos(math.radians(_angle)) * 0.5
-        a = math.sin(math.radians(_angle)) * 0.5
+        if self.flip:
+            x0 = self.imshape[1] - x0 
+            
+        b = math.cos(_angle) * 0.5
+        a = math.sin(_angle) * 0.5
+        # 
         pt0 = Point(int(x0 - a * height - b * width), int(y0 + b * height - a * width))
         pt1 = Point(int(x0 + a * height - b * width), int(y0 - b * height - a * width))
         pt2 = Point(int(2 * x0 - pt0.x), int(2 * y0 - pt0.y))
@@ -168,7 +151,7 @@ class Rectangle:
         return "Rectangle: x: {}, y: {}, w: {}, h: {}, angle: {}".format(self.x, self.y, self.w, self.h, self.angle)
 
 
-def draw_polygon(image, pts, colour=(255, 255, 255), thickness=1):
+def draw_polygon(image, pts, colour=(255, 255, 255), thickness=2):
     """
     Draws a rectangle on a given image.
     :param image: What to draw the rectangle on
@@ -184,5 +167,53 @@ def draw_polygon(image, pts, colour=(255, 255, 255), thickness=1):
 
     return image
 
+# def draw(filename, res):
+#     # print(filename)
+#     img = Image.open(filename)
+#     w, h=img.size
+#     draw = ImageDraw.Draw(img)
+#     for class_name,lx,ly,rx,ry,ang, prob in res:
+#         result = [int((rx+lx)/2),int((ry+ly)/2),int(rx-lx),int(ry-ly),ang]
+#         result=np.array(result)
+#         x=int(result[0])
+#         y=int(result[1])
+#         height=int(result[2])
+#         width=int(result[3])
+#         print('Anglezs', result[4])
+#         anglePi = result[4]/180 * math.pi
+#         anglePi = anglePi if anglePi <= math.pi else anglePi - math.pi
+ 
+#         cosA = math.cos(anglePi)
+#         sinA = math.sin(anglePi)
+        
+#         x1=x-0.5*width   
+#         y1=y-0.5*height
+        
+#         x0=x+0.5*width 
+#         y0=y1
+        
+#         x2=x1            
+#         y2=y+0.5*height 
+        
+#         x3=x0   
+#         y3=y2
+        
+#         x0n= (x0 -x)*cosA -(y0 - y)*sinA + x
+#         y0n = (x0-x)*sinA + (y0 - y)*cosA + y
+        
+#         x1n= (x1 -x)*cosA -(y1 - y)*sinA + x
+#         y1n = (x1-x)*sinA + (y1 - y)*cosA + y
+        
+#         x2n= (x2 -x)*cosA -(y2 - y)*sinA + x
+#         y2n = (x2-x)*sinA + (y2 - y)*cosA + y
+        
+#         x3n= (x3 -x)*cosA -(y3 - y)*sinA + x
+#         y3n = (x3-x)*sinA + (y3 - y)*cosA + y
 
-
+#         draw.line([(x0n, y0n),(x1n, y1n)], fill=(0, 0, 255),width=5) # blue  横线
+#         draw.line([(x1n, y1n),(x2n, y2n)], fill=(255, 0, 0),width=5) # red    竖线
+#         draw.line([(x2n, y2n),(x3n, y3n)],fill= (0,0,255),width=5)
+#         draw.line([(x0n, y0n), (x3n, y3n)],fill=(255,0,0),width=5)
+#         #    plt.imshow(img)
+#         #    plt.show()
+#     img.save(os.path.join('img_ret','dla_dcn_34_best_v2',os.path.split(filename)[-1]))

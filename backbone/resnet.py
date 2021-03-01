@@ -190,10 +190,10 @@ class Creat_ResNet(nn.Module):
 
         x = self.deconv_layers(x)
         ret = {}
-        res = [] # 为了画图
+        res = [] 
         for head in self.heads:
             ret[head] = self.__getattr__(head)(x)
-            res.append(self.__getattr__(head)(x))  #为了画图，不画图就返回ret
+            res.append(self.__getattr__(head)(x))  
         return res if self.plot else ret
 
 resnet_spec = {18: (BasicBlock, [2, 2, 2, 2]),
