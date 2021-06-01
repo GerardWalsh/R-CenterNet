@@ -51,10 +51,22 @@ def parse_args():
         default=4,
         help="Whether data has been normalized.",
     )
+    parser.add_argument(
+        "--optimiser",
+        type=str,
+        default="SGD",
+        help="Which optimiser to use.",
+    )
     return parser.parse_args()
 
 
 args = parse_args()
+
+opts = {
+    "RMSprop": torch.optim.RMSprop,
+    "Adam": torch.optim.Adam,
+    "SGD": torch.optim.SGD,
+}
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 use_gpu = torch.cuda.is_available()
@@ -84,7 +96,8 @@ for key, value in params_dict.items():
 
 # optimizer = torch.optim.SGD(params, lr=learning_rate, momentum=0.9, weight_decay=5e-4)
 # optimizer = torch.optim.Adam(params, lr=learning_rate, weight_decay=1e-4)
-optimizer = torch.optim.RMSprop(params)
+print(f"[INFO]: Using {str(args.optimiser)} optimiser.")
+optimizer = opts[str(args.optimiser)](params, lr=args.lr)
 
 transform = transforms.Compose(
     [
@@ -110,7 +123,7 @@ train_loader = DataLoader(
 
 test_dataset = ctDataset(split="val")
 test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False, num_workers=0)
-print("the dataset has %d images" % (len(train_dataset)))
+print("[INFO]: The dataset has %d images" % (len(train_dataset)))
 
 
 num_iter = 0
