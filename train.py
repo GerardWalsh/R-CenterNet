@@ -45,6 +45,12 @@ def parse_args():
         default=10,
         help="Whether data has been normalized.",
     )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=4,
+        help="Whether data has been normalized.",
+    )
     return parser.parse_args()
 
 
@@ -98,7 +104,9 @@ train_dataset = ctDataset(
     center=bool(args.center),
 )
 # train_dataset = ctDataset(split='train')
-train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=0)
+train_loader = DataLoader(
+    train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0
+)
 
 test_dataset = ctDataset(split="val")
 test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False, num_workers=0)
@@ -171,7 +179,7 @@ for epoch in range(num_epochs):
         centered = ""
     torch.save(
         model.state_dict(),
-        f"last_{args.model}_{args.input_size}_epochs:{args.epochs}_lr:{args.lr}_RMSprop_{centered}.pth",
+        f"last_{args.model}_{args.input_size}_epochs:{args.epochs}_lr:{args.lr}_RMSprop_{centered}_batch_size:{args.batch_size}.pth",
     )
 
 print(
