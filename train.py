@@ -192,7 +192,7 @@ for epoch in range(num_epochs):
         centered = ""
     torch.save(
         model.state_dict(),
-        f"last_{args.model}_{args.input_size}_epochs:{args.epochs}_lr:{args.lr}_RMSprop_{centered}_batch_size:{args.batch_size}.pth",
+        f"last_{args.model}_{args.input_size}_epochs:{args.epochs}_lr:{args.lr}_{args.optimiser}_{centered}_batch_size:{args.batch_size}.pth",
     )
 
 print(
