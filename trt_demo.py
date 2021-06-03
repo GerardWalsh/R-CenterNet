@@ -441,6 +441,8 @@ def demo(root_path):
 
     # torch_outs = model(images[0][0])
     # ipdb.set_trace()
+    import ipdb
+
     print("Starting inference")
     t = perf_counter()
     for data in zip(preprocessed_image_data, images, image_paths):
