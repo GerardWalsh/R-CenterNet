@@ -36,7 +36,10 @@ def parse_args():
         "--display", type=bool, default=False, help="Whether to display detections"
     )
     parser.add_argument(
-        "--post-process", type=bool, default=False, help="Whether to process network output"
+        "--post-process",
+        type=bool,
+        default=False,
+        help="Whether to process network output",
     )
 
     return parser.parse_args()
@@ -408,6 +411,14 @@ def dump_boxes_to_text(bboxes, filename="output.txt", label="defect"):
             f.write("\n")
 
 
+def get_image_data(root_path):
+    image_paths = [x for x in paths.list_images(root_path)]
+    image_paths.sort()
+    images = [cv2.imread(path) for path in image_paths]
+    preprocessed_images = [pre_process(image) for image in images]
+    return preprocessed_images, images
+
+
 def demo(root_path):
     # debugger = Debugger(dataset=opt.dataset, ipynb=(opt.debug==3), theme=opt.debugger_theme)
     # model = ResNet(18)
@@ -422,71 +433,69 @@ def demo(root_path):
     engine = get_engine(1, "", trt_engine_path, fp16_mode=True)
     context = engine.create_execution_context()
     inputs, outputs, bindings, stream = allocate_buffers(engine)
+    preprocessed_image_data, images = get_image_data(root_path)
 
-    image_paths = [x for x in paths.list_images(root_path)]
-    image_paths.sort()
-    images_data = [pre_process(cv2.imread(path)) for path in image_paths]
     # torch_outs = model(images[0][0])
     # ipdb.set_trace()
     print("Starting inference")
     t = perf_counter()
-    for data in images_data:
-        input, meta = data  # transpose(2, 0, 1)
+    for data in zip(preprocessed_image_data, images):
+        (preprocessed_input, meta), image = data  # transpose(2, 0, 1)
         # ipdb.set_trace()
-        inputs[0].host = input[0].numpy().reshape(-1)
+        inputs[0].host = preprocessed_input[0].numpy().reshape(-1)
         output_data = do_inference(
             context, bindings=bindings, inputs=inputs, outputs=outputs, stream=stream
         )
         output = [np.expand_dims(x.reshape((-1, 56, 56)), 0) for x in output_data]
         # ipdb.set_trace()
         if args.post_process:
-        hm = torch.Tensor(output[0]).sigmoid_()
-        ang = torch.Tensor(output[2]).relu_()
-        wh = torch.Tensor(output[1])
-        reg = torch.Tensor(output[3])
+            hm = torch.Tensor(output[0]).sigmoid_()
+            ang = torch.Tensor(output[2]).relu_()
+            wh = torch.Tensor(output[1])
+            reg = torch.Tensor(output[3])
 
-        dets = ctdet_decode(hm, wh, ang, reg=reg, K=100)
-        dets = post_process(dets, meta)
-        ret = merge_outputs(dets)
+            dets = ctdet_decode(hm, wh, ang, reg=reg, K=100)
+            dets = post_process(dets, meta)
+            ret = merge_outputs(dets)
 
-        res = np.empty([1, 7])
-        for i, c in ret.items():
-            tmp_s = ret[i][ret[i][:, 5] > 0.5]
-            tmp_c = np.ones(len(tmp_s)) * (i + 1)
-            tmp = np.c_[tmp_c, tmp_s]
-            res = np.append(res, tmp, axis=0)
-            res = np.delete(res, 0, 0)
-            res = res.tolist()
-        detections = res
-        if args.display:
-            detection_lol = []
-            for detection in detections:
-                class_name, lx, ly, rx, ry, ang, prob = detection
-                detection_list = [
-                    (rx + lx) / 2,
-                    (ry + ly) / 2,
-                    (rx - lx),
-                    (ry - ly),
-                    ang,
-                ]
-                detection_lol.append(detection_list)
-            for rotated_bounding_box in detection_lol:
-                cv2.circle(
-                    image,
-                    (int(rotated_bounding_box[0]), int(rotated_bounding_box[1])),
-                    2,
-                    (255, 0, 0),
-                    -1,
-                )
-                pts = get_vertices_points(rotated_bounding_box)
-                draw_polygon(image, pts)
-            # ipdb.set_trace()
-            cv2.imshow("test", image)
-            key = cv2.waitKey(1)
+            res = np.empty([1, 7])
+            for i, c in ret.items():
+                tmp_s = ret[i][ret[i][:, 5] > 0.5]
+                tmp_c = np.ones(len(tmp_s)) * (i + 1)
+                tmp = np.c_[tmp_c, tmp_s]
+                res = np.append(res, tmp, axis=0)
+                res = np.delete(res, 0, 0)
+                res = res.tolist()
+            detections = res
+            if args.display:
+                detection_lol = []
+                for detection in detections:
+                    class_name, lx, ly, rx, ry, ang, prob = detection
+                    detection_list = [
+                        (rx + lx) / 2,
+                        (ry + ly) / 2,
+                        (rx - lx),
+                        (ry - ly),
+                        ang,
+                    ]
+                    detection_lol.append(detection_list)
+                for rotated_bounding_box in detection_lol:
+                    cv2.circle(
+                        image,
+                        (int(rotated_bounding_box[0]), int(rotated_bounding_box[1])),
+                        2,
+                        (255, 0, 0),
+                        -1,
+                    )
+                    pts = get_vertices_points(rotated_bounding_box)
+                    draw_polygon(image, pts)
+                # ipdb.set_trace()
+                cv2.imshow("test", image)
+                key = cv2.waitKey(1)
 
         # ipdb.set_trace()
     t1 = perf_counter()
-    print("FPS: {}".format(len(image_paths) / (t1 - t)))
+    print("FPS: {}".format(len(images) / (t1 - t)))
 
 
 if __name__ == "__main__":
