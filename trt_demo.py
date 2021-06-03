@@ -299,7 +299,7 @@ def _topk(scores, K=40):
     batch, cat, height, width = scores.size()
     topk_scores, topk_inds = torch.topk(scores.view(batch, cat, -1), K)
     topk_inds = topk_inds % (height * width)
-    topk_ys = (topk_inds / width).int().float()
+    topk_ys = torch.true_divide(topk_inds, width).int().float()
     topk_xs = (topk_inds % width).int().float()
     topk_score, topk_ind = torch.topk(topk_scores.view(batch, -1), K)
     topk_clses = (topk_ind / K).int()
@@ -446,7 +446,7 @@ def demo(root_path):
     print("Starting inference")
     t = perf_counter()
     for data in zip(preprocessed_image_data, images, image_paths):
-        (preprocessed_input, meta), image, path = data  # transpose(2, 0, 1)
+        (preprocessed_input, meta), image, image_path = data  # transpose(2, 0, 1)
         ipdb.set_trace()
         inputs[0].host = preprocessed_input[0].numpy().reshape(-1)
         output_data = do_inference(
@@ -472,10 +472,8 @@ def demo(root_path):
                 res = np.append(res, tmp, axis=0)
                 res = np.delete(res, 0, 0)
                 res = res.tolist()
-            detections = res
-            import ipdb
+                 = res
 
-            ipdb.set_trace()
             if args.display:
                 detection_lol = []
                 for detection in detections:
