@@ -464,16 +464,17 @@ def demo(root_path):
             dets = post_process(dets, meta)
             ret = merge_outputs(dets)
 
-            res = np.empty([1, 7])
+            detections = np.empty([1, 7])
             for i, c in ret.items():
                 tmp_s = ret[i][ret[i][:, 5] > 0.5]
                 tmp_c = np.ones(len(tmp_s)) * (i + 1)
                 tmp = np.c_[tmp_c, tmp_s]
-                res = np.append(res, tmp, axis=0)
-                res = np.delete(res, 0, 0)
-                res = res.tolist()
-                detections = res
-
+                detections = np.append(detections, tmp, axis=0)
+                detections = np.delete(detections, 0, 0)
+                detections = detections.tolist()
+            ipdb.set_trace()
+            detection_txt_file_path = image_path.split(".")[0] + ".txt"
+            dump_boxes_to_text(detections, detection_txt_file_path)
             if args.display:
                 detection_lol = []
                 for detection in detections:
