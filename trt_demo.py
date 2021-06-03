@@ -302,7 +302,7 @@ def _topk(scores, K=40):
     topk_ys = torch.true_divide(topk_inds, width).int().float()
     topk_xs = (topk_inds % width).int().float()
     topk_score, topk_ind = torch.topk(topk_scores.view(batch, -1), K)
-    topk_clses = (topk_ind / K).int()
+    topk_clses = torch.true_divide(topk_ind, K).int()
     topk_inds = _gather_feat(topk_inds.view(batch, -1, 1), topk_ind).view(batch, K)
     topk_ys = _gather_feat(topk_ys.view(batch, -1, 1), topk_ind).view(batch, K)
     topk_xs = _gather_feat(topk_xs.view(batch, -1, 1), topk_ind).view(batch, K)
@@ -472,7 +472,7 @@ def demo(root_path):
                 res = np.append(res, tmp, axis=0)
                 res = np.delete(res, 0, 0)
                 res = res.tolist()
-                 = res
+                detections = res
 
             if args.display:
                 detection_lol = []
