@@ -416,7 +416,7 @@ def get_image_data(root_path):
     image_paths.sort()
     images = [cv2.imread(path) for path in image_paths]
     preprocessed_images = [pre_process(image) for image in images]
-    return preprocessed_images, images
+    return preprocessed_images, images, image_paths
 
 
 def demo(root_path):
@@ -433,15 +433,15 @@ def demo(root_path):
     engine = get_engine(1, "", trt_engine_path, fp16_mode=True)
     context = engine.create_execution_context()
     inputs, outputs, bindings, stream = allocate_buffers(engine)
-    preprocessed_image_data, images = get_image_data(root_path)
+    preprocessed_image_data, images, image_paths = get_image_data(root_path)
 
     # torch_outs = model(images[0][0])
     # ipdb.set_trace()
     print("Starting inference")
     t = perf_counter()
-    for data in zip(preprocessed_image_data, images):
-        (preprocessed_input, meta), image = data  # transpose(2, 0, 1)
-        # ipdb.set_trace()
+    for data in zip(preprocessed_image_data, images, image_paths):
+        (preprocessed_input, meta), image, path = data  # transpose(2, 0, 1)
+        ipdb.set_trace()
         inputs[0].host = preprocessed_input[0].numpy().reshape(-1)
         output_data = do_inference(
             context, bindings=bindings, inputs=inputs, outputs=outputs, stream=stream
@@ -467,6 +467,9 @@ def demo(root_path):
                 res = np.delete(res, 0, 0)
                 res = res.tolist()
             detections = res
+            import ipdb
+
+            ipdb.set_trace()
             if args.display:
                 detection_lol = []
                 for detection in detections:
