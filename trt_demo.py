@@ -33,6 +33,11 @@ def parse_args():
         help="The root folder to the streams subfolders.",
     )
     parser.add_argument(
+        "--model-path",
+        type=str,
+        help="Model for inference.",
+    )
+    parser.add_argument(
         "--display", type=bool, default=False, help="Whether to display detections"
     )
     parser.add_argument(
@@ -41,7 +46,6 @@ def parse_args():
         default=False,
         help="Whether to process network output",
     )
-
     return parser.parse_args()
 
 
@@ -428,7 +432,7 @@ def demo(root_path):
     # model.cuda()
     # out_shape = outs.shape
 
-    trt_engine_path = "./optimised_models/centernet_resnet_18_224_fp16.trt"
+    trt_engine_path = str(args.model_path)
 
     engine = get_engine(1, "", trt_engine_path, fp16_mode=True)
     context = engine.create_execution_context()
