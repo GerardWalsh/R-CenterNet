@@ -15,7 +15,7 @@ from PIL import Image, ImageDraw
 # from resnet_dcn import ResNet
 
 sys.path.append(r'./backbone')
-from dlanet_dcn import DlaNet
+# from dlanet_dcn import DlaNet
 from Loss import _gather_feat
 
 from dataset import get_affine_transform
@@ -24,7 +24,7 @@ from Loss import _transpose_and_gather_feat
 
 def pre_process(image):
     height, width = image.shape[0:2]
-    inp_height, inp_width = 512, 512
+    inp_height, inp_width = 224, 224
     c = np.array([width / 2.,  height / 2.], dtype=np.float32)
     s = max(height, width) * 1.0
     trans_input = get_affine_transform(c, s, 0, [inp_width, inp_height])
@@ -86,8 +86,9 @@ def ctdet_decode(heat, wh, ang, reg=None, K=100):
     # print('REg', reg[:, :, 0:1])
     xs = xs.view(batch, K, 1) + reg[:, :, 0:1]
     ys = ys.view(batch, K, 1) + reg[:, :, 1:2]
-   
+    # import ipdb;ipdb.set_trace()
     wh = _transpose_and_gather_feat(wh, inds)
+    # import ipdb;ipdb.set_trace()
     wh = wh.view(batch, K, 2)
     # print('ang shape', ang.shape)
     ang = _transpose_and_gather_feat(ang, inds)
