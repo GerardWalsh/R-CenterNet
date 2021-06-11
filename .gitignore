@@ -6,6 +6,7 @@ venv*
 
 # Training data
 data/
+*.yaml
 
 # Python related files
 *__pycache__*

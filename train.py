@@ -1,5 +1,6 @@
 import argparse
 from datetime import datetime
+import pathlib
 import time
 import os
 import sys
@@ -13,7 +14,7 @@ from opencv_transforms import transforms
 
 from dataset import ctDataset
 from Loss import CtdetLoss
-from utils.yaml import read_yaml
+from utils.yaml import read_yaml, write_yaml
 
 sys.path.append(r"./backbone")
 from resnet import ResNet
@@ -63,7 +64,7 @@ def parse_args():
 
 args = parse_args()
 config = read_yaml(args.training_config)
-date_stamp = datetime.now().strftime("%j:%H:%M:%S")
+date_stamp = datetime.now().strftime("%j:%H:%M")
 
 
 opts = {
@@ -135,10 +136,14 @@ print("[INFO]: The dataset has %d images" % (len(train_dataset)))
 
 
 num_iter = 0
-
 best_test_loss = np.inf
-
 start = time.perf_counter()
+
+# Create directory for training run
+training_directory_name = pathlib.Path(
+    f'{date_stamp}_{config["model"]}_{config["input_size"]}_epochs:{config["epochs"]}_lr:{config["learning_rate"]}_{config["optimiser"]}_{centered}_batch_size:{config["batch_size"]}'
+)
+training_directory_name.mkdir(parents=True, exist_ok=True)
 
 for epoch in range(num_epochs):
     model.train()
@@ -197,7 +202,7 @@ for epoch in range(num_epochs):
 
     torch.save(
         model.state_dict(),
-        f'{date_stamp}_last_{config["model"]}_{config["input_size"]}_epochs:{config["epochs"]}_lr:{config["learning_rate"]}_{config["optimiser"]}_{centered}_batch_size:{config["batch_size"]}.pth',
+        training_directory_name / "last.pth",
     )
 
 print(
@@ -205,3 +210,7 @@ print(
         num_epochs, len(train_dataset), time.perf_counter() - start
     )
 )
+
+print("Saving config")
+config["datestamp"] = date_stamp
+write_yaml(training_directory_name / "trained_config.yml", config)
