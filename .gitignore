@@ -1,0 +1,11 @@
+# Torch/Tensorflow model files
+*.pth
+
+# Virtual environments
+venv*
+
+# Training data
+data/
+
+# Python related files
+*__pycache__*
