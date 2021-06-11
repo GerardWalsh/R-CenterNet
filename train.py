@@ -19,11 +19,6 @@ from utils.yaml import read_yaml, write_yaml
 sys.path.append(r"./backbone")
 from resnet import ResNet
 
-# from resnet_dcn import ResNet
-# from dlanet import DlaNet
-# from dlanet_dcn import DlaNet
-# import predict
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -33,32 +28,6 @@ def parse_args():
         required=True,
         help="Name of the model arch.",
     )
-    # parser.add_argument("--lr", type=float, default=1e-3, help="Base learning rate.")
-    # parser.add_argument("--input-size", type=int, default=224, help="Image input size.")
-    # parser.add_argument(
-    #     "--center",
-    #     type=bool,
-    #     default=False,
-    #     help="Whether to center the data by the mean and std dev.",
-    # )
-    # parser.add_argument(
-    #     "--epochs",
-    #     type=int,
-    #     default=10,
-    #     help="Whether data has been normalized.",
-    # )
-    # parser.add_argument(
-    #     "--batch-size",
-    #     type=int,
-    #     default=4,
-    #     help="Whether data has been normalized.",
-    # )
-    # parser.add_argument(
-    #     "--optimiser",
-    #     type=str,
-    #     default="SGD",
-    #     help="Which optimiser to use.",
-    # )
     return parser.parse_args()
 
 
@@ -85,8 +54,6 @@ device = torch.device("cuda")
 if use_gpu:
     model.cuda()
 
-# summary(model, input_size=(3, 512, 512))
-
 model.train()
 
 learning_rate = float(config["learning_rate"])
@@ -98,8 +65,6 @@ params_dict = dict(model.named_parameters())
 for key, value in params_dict.items():
     params += [{"params": [value], "lr": learning_rate}]
 
-# optimizer = torch.optim.SGD(params, lr=learning_rate, momentum=0.9, weight_decay=5e-4)
-# optimizer = torch.optim.Adam(params, lr=learning_rate, weight_decay=1e-4)
 print(f'[INFO]: Using {str(config["optimizer"])} optimiser.')
 optimizer = opts[str(config["optimizer"])](params, lr=learning_rate)
 
