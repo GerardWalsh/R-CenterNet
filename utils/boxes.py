@@ -1,3 +1,4 @@
+from operator import le
 import pathlib
 
 import cv2
@@ -217,7 +218,26 @@ def draw_polygon(image, pts, colour=(255, 255, 255), thickness=2):
     return image
 
 
-def dump_validation_batch(epoch, save_directory, image_file_name, gt_boxes, test_boxes):
+def dump_validation_batch(
+    training_directory_name, epoch, sample_detections, model_detections, sample
+):
+    assert len(sample_detections) == len(model_detections)
+    for sample_idx in range(len(sample_detections)):
+
+        try:
+            image_name = sample["filepath"][sample_idx].split("/")[-1].split(".")[0]
+        except:
+            print("Index error")
+        sample = sample_detections[sample_idx]
+        prediction = model_detections[sample_idx]
+        dump_validation_sample(
+            epoch, training_directory_name, image_name, sample, prediction
+        )
+
+
+def dump_validation_sample(
+    epoch, save_directory, image_file_name, gt_boxes, test_boxes
+):
     data_types = ["gt", "detections"]
     box_data = [gt_boxes, test_boxes]
     for i, data_type in enumerate(data_types):

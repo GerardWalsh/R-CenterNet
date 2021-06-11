@@ -14,11 +14,27 @@ from opencv_transforms import transforms
 
 from dataset import ctDataset
 from Loss import CtdetLoss
+from predict import (
+    post_process_model_outs,
+    post_process_sample_outs,
+    post_process,
+    merge_outputs,
+    final_output,
+)
 from utils.yaml import read_yaml, write_yaml
 from utils.directory import make_validation_directories
+from utils.boxes import dump_validation_batch
 
 sys.path.append(r"./backbone")
 from resnet import ResNet
+
+
+image_output_meta = {
+    "c": np.array([960.0, 540.0], dtype=np.float32),
+    "s": 1920.0,
+    "out_height": 128,
+    "out_width": 128,
+}
 
 
 def parse_args():
@@ -80,6 +96,7 @@ transform = transforms.Compose(
     ]
 )
 
+# Setup hyperparameters
 if config["center"]:
     centered = "centered"
 else:
@@ -91,12 +108,15 @@ train_dataset = ctDataset(
     input_size=int(config["input_size"]),
     center=bool(config["center"]),
 )
-# train_dataset = ctDataset(split='train')
 train_loader = DataLoader(
     train_dataset, batch_size=config["batch_size"], shuffle=True, num_workers=0
 )
 
-test_dataset = ctDataset(split="val")
+test_dataset = ctDataset(
+    split="val",
+    input_size=int(config["input_size"]),
+    center=bool(config["center"]),
+)
 test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False, num_workers=0)
 print("[INFO]: The dataset has %d images" % (len(train_dataset)))
 
@@ -125,7 +145,8 @@ for epoch in range(num_epochs):
     for i, sample in enumerate(train_loader):
 
         for k in sample:
-            sample[k] = sample[k].to(device=device, non_blocking=True)
+            if k != "filepath":
+                sample[k] = sample[k].to(device=device, non_blocking=True)
 
         pred = model(sample["input"])
         loss = criterion(pred, sample)
@@ -157,13 +178,21 @@ for epoch in range(num_epochs):
     for i, sample in enumerate(test_loader):
         if use_gpu:
             for k in sample:
-                sample[k] = sample[k].to(device=device, non_blocking=True)
+                if k != "filepath":
+                    sample[k] = sample[k].to(device=device, non_blocking=True)
 
         pred = model(sample["input"])
-        pred["hm"] = pred["hm"].sigmoid_()
 
         # Post process output to calculate map
+        pred["hm"] = pred["hm"].sigmoid_()
+        model_detections = post_process_model_outs(pred, image_output_meta)
+        sample_detections = post_process_sample_outs(sample, image_output_meta)
+        dump_validation_batch(
+            training_directory_name, epoch, sample_detections, model_detections, sample
+        )
+        # import ipdb
 
+        # ipdb.set_trace()
         loss = criterion(pred, sample)
         validation_loss += loss.item()
     validation_loss /= len(test_loader)

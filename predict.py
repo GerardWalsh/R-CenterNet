@@ -173,6 +173,28 @@ def ctdet_post_process(dets, c, s, h, w, num_classes):
     return ret
 
 
+def ctdet_decode_sample(heat, wh, ang, reg, K=100):
+    batch, cat, height, width = heat.size()
+    scores, inds, clses, ys, xs = _topk(heat, K=K)
+    xs = xs.view(batch, K, 1) + reg[:, :, 0:1]
+    ys = ys.view(batch, K, 1) + reg[:, :, 1:2]
+
+    clses = clses.view(batch, K, 1).float()
+    scores = scores.view(batch, K, 1)
+    bboxes = torch.cat(
+        [
+            xs - wh[..., 0:1] / 2,
+            ys - wh[..., 1:2] / 2,
+            xs + wh[..., 0:1] / 2,
+            ys + wh[..., 1:2] / 2,
+            ang,
+        ],
+        dim=2,
+    )
+    detections = torch.cat([bboxes, scores, clses], dim=2)
+    return detections
+
+
 def post_process(dets, meta):
     dets = dets.detach().cpu().numpy()
     dets = dets.reshape(1, -1, dets.shape[2])
@@ -202,6 +224,54 @@ def merge_outputs(detections):
             keep_inds = detections[j][:, 5] >= thresh
             detections[j] = detections[j][keep_inds]
     return detections
+
+
+def post_process_model_outs(model_outs, meta):
+    dets = ctdet_decode(
+        model_outs["hm"],
+        model_outs["wh"],
+        model_outs["ang"],
+        reg=model_outs["reg"],
+        K=100,
+    )
+    detections = process_boxes(dets, meta, confidence=0.1)
+
+    return detections
+
+
+def post_process_sample_outs(sample, meta):
+    sample_dets = ctdet_decode_sample(
+        sample["hm"], sample["wh"], sample["ang"], sample["reg"], K=100
+    )
+    detections = process_boxes(sample_dets, meta, confidence=0.99)
+
+    return detections
+
+
+def process_boxes(detections, meta, confidence=0.99):
+    results = []
+    for i in range(len(detections)):
+        sample_det = post_process(detections[i].unsqueeze(0), meta)
+        sample_ret = merge_outputs(sample_det)
+        sample_outs = final_output(sample_ret, conf=confidence)
+        results.append(sample_outs)
+    return results
+
+
+def final_output(ret, conf=0.5):
+    """
+    Apparently removes elements below the threshold - again?
+
+    """
+    res = np.empty([1, 7])
+    for i, c in ret.items():
+        tmp_s = ret[i][ret[i][:, 5] > conf]
+        tmp_c = np.ones(len(tmp_s)) * (i + 1)
+        tmp = np.c_[tmp_c, tmp_s]
+        res = np.append(res, tmp, axis=0)
+    res = np.delete(res, 0, 0)
+    res = res.tolist()
+    return res
 
 
 if __name__ == "__main__":

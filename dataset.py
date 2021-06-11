@@ -42,7 +42,7 @@ class ctDataset(data.Dataset):
         except:
             print("No any data!")
 
-        self.max_objs = 128
+        self.max_objs = 100
         self.class_name = ["obj"]
         self._valid_ids = [1]
         self.cat_ids = {v: i for i, v in enumerate(self._valid_ids)}
@@ -196,6 +196,7 @@ class ctDataset(data.Dataset):
             "ind": ind,
             "wh": wh,
             "ang": ang,
+            "filepath": img_path,
         }
         # print('input type', tpyinp)
         reg_offset_flag = True  #

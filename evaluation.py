@@ -115,6 +115,7 @@ def get_pre_ret(img_path, device, conf=0.5):
     image = cv2.imread(img_path)
     # image = cv2.resize(image, (960, 540))
     images, meta = pre_process(image, image_size=512)
+    print(meta)
     images = images.to(device)
     output, dets, forward_time = process(images, return_time=True)
 
