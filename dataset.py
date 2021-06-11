@@ -12,7 +12,7 @@ import random
 import numpy as np
 import torch.utils.data as data
 import pycocotools.coco as coco
-from utils.boxe import Rectangle
+from utils.boxes import Rectangle
 from PIL import Image
 
 

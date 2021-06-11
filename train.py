@@ -178,6 +178,7 @@ for epoch in range(num_epochs):
 
         pred = model(sample["input"])
         pred["hm"] = pred["hm"].sigmoid_()
+
         loss = criterion(pred, sample)
         validation_loss += loss.item()
     validation_loss /= len(test_loader)

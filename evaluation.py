@@ -20,7 +20,7 @@ from resnet import ResNet
 
 from predict import pre_process, ctdet_decode, post_process, merge_outputs
 from dataset import coco_box_to_bbox
-from utils.boxe import Rectangle
+from utils.boxes import Rectangle
 from utils.xml import xml_annotations_from_dict, get_lab_ret
 
 
