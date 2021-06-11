@@ -15,6 +15,7 @@ from opencv_transforms import transforms
 from dataset import ctDataset
 from Loss import CtdetLoss
 from utils.yaml import read_yaml, write_yaml
+from utils.directory import make_validation_directories
 
 sys.path.append(r"./backbone")
 from resnet import ResNet
@@ -106,7 +107,7 @@ start = time.perf_counter()
 
 # Create directory for training run
 training_directory_name = pathlib.Path(
-    f'{date_stamp}_{config["model"]}_{config["input_size"]}_epochs:{config["epochs"]}_lr:{config["learning_rate"]}_{config["optimiser"]}_{centered}_batch_size:{config["batch_size"]}'
+    f'{date_stamp}_{config["model"]}_{config["input_size"]}_epochs:{config["epochs"]}_lr:{config["learning_rate"]}_{config["optimizer"]}_{centered}_batch_size:{config["batch_size"]}'
 )
 training_directory_name.mkdir(parents=True, exist_ok=True)
 
@@ -149,6 +150,10 @@ for epoch in range(num_epochs):
     # validation
     validation_loss = 0.0
     model.eval()
+
+    # create directories for storing validation results
+    make_validation_directories(training_directory_name, epoch)
+
     for i, sample in enumerate(test_loader):
         if use_gpu:
             for k in sample:
@@ -157,19 +162,18 @@ for epoch in range(num_epochs):
         pred = model(sample["input"])
         pred["hm"] = pred["hm"].sigmoid_()
 
+        # Post process output to calculate map
+
         loss = criterion(pred, sample)
         validation_loss += loss.item()
     validation_loss /= len(test_loader)
 
-    # if best_test_loss > validation_loss:
-    #     best_test_loss = validation_loss
-    #     print('Got best test loss %.5f' % best_test_loss)
-    #     torch.save(model.state_dict(),'best.pth')
+    if best_test_loss > validation_loss:
+        best_test_loss = validation_loss
+        print("Got best test loss %.5f" % best_test_loss)
+        torch.save(model.state_dict(), training_directory_name / "best.pth")
 
-    torch.save(
-        model.state_dict(),
-        training_directory_name / "last.pth",
-    )
+    torch.save(model.state_dict(), training_directory_name / "last.pth")
 
 print(
     "{} epochs with {} frames in {} seconds".format(
