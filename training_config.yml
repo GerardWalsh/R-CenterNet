@@ -1,0 +1,8 @@
+# training:
+  model: resnet_34
+  input_size: 512
+  optimizer: Adam
+  epochs: 25
+  batch_size: 6
+  learning_rate: 0.00005
+  center: True
