@@ -69,7 +69,6 @@ class ctDataset(data.Dataset):
         self.input_size = input_size
         self.transforms = transform
         self.center = center
-        print("Number of samples", self.num_samples)
 
     def __len__(self):
         # if using passing transforms to CtDataset instantiation, adjust num_samples by len(transforms)*self.num_samples

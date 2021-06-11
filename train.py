@@ -9,7 +9,6 @@ import numpy as np
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from opencv_transforms import transforms
-from torchsummary import summary
 
 from dataset import ctDataset
 from Loss import CtdetLoss
@@ -98,7 +97,7 @@ for key, value in params_dict.items():
 
 # optimizer = torch.optim.SGD(params, lr=learning_rate, momentum=0.9, weight_decay=5e-4)
 # optimizer = torch.optim.Adam(params, lr=learning_rate, weight_decay=1e-4)
-print(f'[INFO]: Using {str(config["optimiser"])} optimiser.')
+print(f'[INFO]: Using {str(config["optimizer"])} optimiser.')
 optimizer = opts[str(config["optimizer"])](params, lr=learning_rate)
 
 transform = transforms.Compose(
