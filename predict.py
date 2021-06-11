@@ -23,9 +23,9 @@ from dataset import get_affine_transform
 from Loss import _transpose_and_gather_feat
 
 
-def pre_process(image):
+def pre_process(image, image_size=224):
     height, width = image.shape[0:2]
-    inp_height, inp_width = 224, 224
+    inp_height, inp_width = image_size, image_size
     c = np.array([width / 2.0, height / 2.0], dtype=np.float32)
     s = max(height, width) * 1.0
     trans_input = get_affine_transform(c, s, 0, [inp_width, inp_height])

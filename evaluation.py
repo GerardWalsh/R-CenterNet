@@ -29,15 +29,15 @@ def parse_args():
     parser.add_argument(
         "--dir",
         type=str,
-        default="/home/gexegetic/R-CenterNet/validation",
-        help="The root folder to the streams subfolders.",
+        required=True,
+        help="The path to the test images.",
     )
-    # parser.add_argument(
-    #     "--model",
-    #     type=str,
-    #     default="torch",
-    #     help="The type of model for inference: tensorrt | torch",
-    # )
+    parser.add_argument(
+        "--model-path",
+        type=str,
+        required=True,
+        help="The path to model to perform inference with.",
+    )
     # parser.add_argument(
     #     "--display", type=bool, default=False, help="Whether to display detections"
     # )
@@ -111,69 +111,10 @@ def process(images, return_time=False):
         return output, dets
 
 
-def iou(bbox1, bbox2, center=False):
-    """Compute the iou of two boxes.
-    Parameters
-    ----------
-    bbox1, bbox2: list.
-        The bounding box coordinates: [xmin, ymin, xmax, ymax] or [xcenter, ycenter, w, h].
-    center: str, default is 'False'.
-        The format of coordinate.
-        center=False: [xmin, ymin, xmax, ymax]
-        center=True: [xcenter, ycenter, w, h]
-    Returns
-    -------
-    iou: float.
-        The iou of bbox1 and bbox2.
-    """
-    if center == False:
-        xmin1, ymin1, xmax1, ymax1 = bbox1
-        xmin2, ymin2, xmax2, ymax2 = bbox2
-    else:
-        xmin1, ymin1 = bbox1[0] - bbox1[2] / 2.0, bbox1[1] - bbox1[3] / 2.0
-        xmax1, ymax1 = bbox1[0] + bbox1[2] / 2.0, bbox1[1] + bbox1[3] / 2.0
-        xmin2, ymin2 = bbox2[0] - bbox2[2] / 2.0, bbox2[1] - bbox2[3] / 2.0
-        xmax2, ymax2 = bbox2[0] + bbox2[2] / 2.0, bbox2[1] + bbox2[3] / 2.0
-
-    # 获取矩形框交集对应的顶点坐标(intersection)
-    xx1 = np.max([xmin1, xmin2])
-    yy1 = np.max([ymin1, ymin2])
-    xx2 = np.min([xmax1, xmax2])
-    yy2 = np.min([ymax1, ymax2])
-
-    # 计算两个矩形框面积
-    area1 = (xmax1 - xmin1) * (ymax1 - ymin1)
-    area2 = (xmax2 - xmin2) * (ymax2 - ymin2)
-
-    # 计算交集面积
-    inter_area = (np.max([0, xx2 - xx1])) * (np.max([0, yy2 - yy1]))
-    # 计算交并比
-    iou = inter_area / (area1 + area2 - inter_area + 1e-6)
-    return iou
-
-
-def iou_rotate_calculate(boxes1, boxes2):
-    area1 = boxes1[2] * boxes1[3]
-    area2 = boxes2[2] * boxes2[3]
-    #    print("####boxes2:", boxes1.shape)
-    #    print("####boxes2:", boxes2.shape)
-    r1 = ((boxes1[0], boxes1[1]), (boxes1[2], boxes1[3]), boxes1[4])
-    r2 = ((boxes2[0], boxes2[1]), (boxes2[2], boxes2[3]), boxes2[4])
-    int_pts = cv2.rotatedRectangleIntersection(r1, r2)[1]
-    if int_pts is not None:
-        order_pts = cv2.convexHull(int_pts, returnPoints=True)
-        int_area = cv2.contourArea(order_pts)
-        # iou
-        ious = int_area * 1.0 / (area1 + area2 - int_area)
-    else:
-        ious = 0
-    return ious
-
-
 def get_pre_ret(img_path, device, conf=0.5):
     image = cv2.imread(img_path)
     # image = cv2.resize(image, (960, 540))
-    images, meta = pre_process(image)
+    images, meta = pre_process(image, image_size=512)
     images = images.to(device)
     output, dets, forward_time = process(images, return_time=True)
 
@@ -344,12 +285,10 @@ def pre_recall(root_path, device, iou=0.5):
 
 if __name__ == "__main__":
     args = parse_args()
-    model = ResNet(18)
+    model = ResNet(34)
     # model = DlaNet(34)
     device = torch.device("cuda")
-    model.load_state_dict(
-        torch.load("./last_resnet_18_224_epochs:50_lr:0.001_RMSprop_centered.pth")
-    )
+    model.load_state_dict(torch.load(args.model_path))
     model.eval()
     model.cuda()
 
