@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 import time
 import os
 import sys
@@ -62,6 +63,7 @@ def parse_args():
 
 args = parse_args()
 config = read_yaml(args.training_config)
+date_stamp = datetime.now().strftime("%j:%H:%M:%S")
 
 
 opts = {
@@ -195,7 +197,7 @@ for epoch in range(num_epochs):
 
     torch.save(
         model.state_dict(),
-        f'last_{config["model"]}_{config["input_size"]}_epochs:{config["epochs"]}_lr:{config["lr"]}_{config["optimiser"]}_{centered}_batch_size:{config["batch_size"]}.pth',
+        f'{date_stamp}_last_{config["model"]}_{config["input_size"]}_epochs:{config["epochs"]}_lr:{config["learning_rate"]}_{config["optimiser"]}_{centered}_batch_size:{config["batch_size"]}.pth',
     )
 
 print(
