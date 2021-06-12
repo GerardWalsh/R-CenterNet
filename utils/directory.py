@@ -8,16 +8,12 @@ def make_validation_directories(training_directory_name, epoch):
 
 
 def make_validation_root_dir(training_directory_name, epoch):
-    print("creating")
-    print(training_directory_name / pathlib.Path(f"epoch_{epoch}"))
     (training_directory_name / pathlib.Path(f"epoch_{epoch}")).mkdir(
         parents=True, exist_ok=True
     )
 
 
 def make_validation_dir(training_directory_name, epoch, datatype):
-    print("ceratinmg")
-    print(training_directory_name / pathlib.Path(f"epoch_{epoch}/{datatype}"))
     (training_directory_name / pathlib.Path(f"epoch_{epoch}/{datatype}")).mkdir(
         parents=True, exist_ok=True
     )

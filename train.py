@@ -187,12 +187,14 @@ for epoch in range(num_epochs):
         pred["hm"] = pred["hm"].sigmoid_()
         model_detections = post_process_model_outs(pred, image_output_meta)
         sample_detections = post_process_sample_outs(sample, image_output_meta)
+        sample_image_filepaths = sample["filepath"]
         dump_validation_batch(
-            training_directory_name, epoch, sample_detections, model_detections, sample
+            training_directory_name,
+            epoch,
+            sample_detections,
+            model_detections,
+            sample_image_filepaths,
         )
-        # import ipdb
-
-        # ipdb.set_trace()
         loss = criterion(pred, sample)
         validation_loss += loss.item()
     validation_loss /= len(test_loader)

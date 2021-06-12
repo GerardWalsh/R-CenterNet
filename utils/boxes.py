@@ -219,19 +219,20 @@ def draw_polygon(image, pts, colour=(255, 255, 255), thickness=2):
 
 
 def dump_validation_batch(
-    training_directory_name, epoch, sample_detections, model_detections, sample
+    training_directory_name, epoch, gt_detections, model_detections, filepaths
 ):
-    assert len(sample_detections) == len(model_detections)
-    for sample_idx in range(len(sample_detections)):
+    assert len(gt_detections) == len(model_detections)
 
+    for sample_idx in range(len(gt_detections)):
         try:
-            image_name = sample["filepath"][sample_idx].split("/")[-1].split(".")[0]
+            image_name = filepaths[sample_idx].split("/")[-1].split(".")[0]
         except:
             print("Index error")
-        sample = sample_detections[sample_idx]
+            return
+        gt = gt_detections[sample_idx]
         prediction = model_detections[sample_idx]
         dump_validation_sample(
-            epoch, training_directory_name, image_name, sample, prediction
+            epoch, training_directory_name, image_name, gt, prediction
         )
 
 
