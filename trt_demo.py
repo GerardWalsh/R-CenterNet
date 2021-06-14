@@ -455,12 +455,15 @@ def demo(root_path, input_size):
     t = perf_counter()
     for data in zip(preprocessed_image_data, images, image_paths):
         (preprocessed_input, meta), image, image_path = data  # transpose(2, 0, 1)
-        ipdb.set_trace()
+        # ipdb.set_trace()
         inputs[0].host = preprocessed_input[0].numpy().reshape(-1)
         output_data = do_inference(
             context, bindings=bindings, inputs=inputs, outputs=outputs, stream=stream
         )
-        output = [np.expand_dims(x.reshape((-1, 128, 128)), 0) for x in output_data]
+        output = [
+            np.expand_dims(x.reshape((-1, feature_map_size, feature_map_size)), 0)
+            for x in output_data
+        ]
         # ipdb.set_trace()
         if args.post_process:
             hm = torch.Tensor(output[0]).sigmoid_()
@@ -480,7 +483,7 @@ def demo(root_path, input_size):
                 detections = np.append(detections, tmp, axis=0)
                 detections = np.delete(detections, 0, 0)
                 detections = detections.tolist()
-            ipdb.set_trace()
+            # ipdb.set_trace()
             detection_txt_file_path = image_path.split(".")[0] + ".txt"
             dump_boxes_to_text(detections, detection_txt_file_path)
             if args.display:
