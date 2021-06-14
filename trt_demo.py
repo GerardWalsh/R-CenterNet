@@ -441,7 +441,7 @@ def demo(root_path, input_size):
 
     trt_engine_path = str(args.model_path)
 
-    engine = get_engine(1, "", trt_engine_path, fp16_mode=True)
+    engine = get_engine(1, "", trt_engine_path)
     context = engine.create_execution_context()
     inputs, outputs, bindings, stream = allocate_buffers(engine)
     preprocessed_image_data, images, image_paths = get_image_data(root_path, input_size)
