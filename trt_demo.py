@@ -477,7 +477,7 @@ def demo(root_path, input_size):
 
             detections = np.empty([1, 7])
             for i, c in ret.items():
-                tmp_s = ret[i][ret[i][:, 5] > 0.5]
+                tmp_s = ret[i][ret[i][:, 5] > 0.3]
                 tmp_c = np.ones(len(tmp_s)) * (i + 1)
                 tmp = np.c_[tmp_c, tmp_s]
                 detections = np.append(detections, tmp, axis=0)
