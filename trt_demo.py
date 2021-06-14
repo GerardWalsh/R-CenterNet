@@ -483,9 +483,22 @@ def demo(root_path, input_size):
                 detections = np.append(detections, tmp, axis=0)
                 detections = np.delete(detections, 0, 0)
                 detections = detections.tolist()
+
+            detection_lol = []
+            for detection in detections:
+                class_name, lx, ly, rx, ry, ang, prob = detection
+                detection_list = [
+                    (rx + lx) / 2,
+                    (ry + ly) / 2,
+                    (rx - lx),
+                    (ry - ly),
+                    ang,
+                ]
+                detection_lol.append([prob] + detection_list)
+
             # ipdb.set_trace()
             detection_txt_file_path = image_path.split(".")[0] + ".txt"
-            dump_boxes_to_text(detections, detection_txt_file_path)
+            dump_boxes_to_text(detection_lol, detection_txt_file_path)
             if args.display:
                 detection_lol = []
                 for detection in detections:
