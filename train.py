@@ -202,7 +202,9 @@ for epoch in range(num_epochs):
     if best_test_loss > validation_loss:
         best_test_loss = validation_loss
         print("Got best test loss %.5f" % best_test_loss)
-        torch.save(model.state_dict(), training_directory_name / "best.pth")
+        torch.save(
+            model.state_dict(), training_directory_name / f"epoch_{epoch}_best.pth"
+        )
 
     torch.save(model.state_dict(), training_directory_name / "last.pth")
 
