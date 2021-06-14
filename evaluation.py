@@ -3,6 +3,7 @@ import math
 import time
 import os
 import sys
+import pathlib
 
 import cv2
 import torch
@@ -38,12 +39,42 @@ def parse_args():
         required=True,
         help="The path to model to perform inference with.",
     )
-    # parser.add_argument(
-    #     "--display", type=bool, default=False, help="Whether to display detections"
-    # )
-    # parser.add_argument(
-    #     "--optimize", type=bool, default=False, help="Whether to optimize to tensorrt"
-    # )
+    parser.add_argument(
+        "--confidence-threshold",
+        type=float,
+        default=0.5,
+        help="Threshold upon which to discard detections.",
+    )
+    parser.add_argument(
+        "--input-size",
+        type=int,
+        default=512,
+        help="Size of image model was trained on.",
+    )
+    parser.add_argument(
+        "--model-arch",
+        type=str,
+        default="resnet_18",
+        help="Model architecture type.",
+    )
+    parser.add_argument(
+        "--save-predictions",
+        type=bool,
+        default=False,
+        help="Whether to store model predictions.",
+    )
+    parser.add_argument(
+        "--create-gt",
+        type=bool,
+        default=False,
+        help="Whether to create gt labels.",
+    )
+    parser.add_argument(
+        "--visualize",
+        type=bool,
+        default=False,
+        help="Whether to create gt labels.",
+    )
     return parser.parse_args()
 
 
@@ -111,11 +142,11 @@ def process(images, return_time=False):
         return output, dets
 
 
-def get_pre_ret(img_path, device, conf=0.5):
+def get_pre_ret(img_path, device, conf=0.3):
     image = cv2.imread(img_path)
     # image = cv2.resize(image, (960, 540))
     images, meta = pre_process(image, image_size=512)
-    print(meta)
+    # print(meta)
     images = images.to(device)
     output, dets, forward_time = process(images, return_time=True)
 
@@ -133,22 +164,31 @@ def get_pre_ret(img_path, device, conf=0.5):
     return res, image
 
 
-def pre_recall(root_path, device, iou=0.5):
+def pre_recall(
+    root_path,
+    device,
+    iou=0.5,
+    store_predictions=False,
+    create_gt=False,
+    visualize=False,
+):
     imgs = paths.list_images(root_path)
-    num = 0
-    all_pre_num = 0
-    all_lab_num = 0
-    miou = 0
-    mang = 0
     ll = [x for x in imgs]
     ll.sort()
-    # print("images", ll)
 
     flip = False
+    # Create directory for predictions
+    if store_predictions:
+        prediction_dir = pathlib.Path(root_path) / "predictions"
+        prediction_dir.mkdir()
+        print(f"Created {str(prediction_dir)} for saving model output.")
+    if create_gt:
+        gt_dir = pathlib.Path(root_path) / "gt"
+        gt_dir.mkdir()
+        print(f"Created {str(gt_dir)} for saving model output.")
 
     for i, img in enumerate(ll):
         img = img.split("/")[-1]
-        # print('IMG', img)
         if img.split(".")[-1] == "jpg":
             detection_lol = []
             label_lol = []
@@ -158,10 +198,6 @@ def pre_recall(root_path, device, iou=0.5):
             detections, image = get_pre_ret(img_path, device)
             if flip:
                 image = cv2.flip(image, 1)
-
-            # labels = get_lab_ret(xml_path)
-            # all_pre_num += len(detections)
-            # all_lab_num += len(labels)
 
             for v, detect in enumerate(detections):
                 class_name, lx, ly, rx, ry, ang, prob = detect
@@ -174,126 +210,61 @@ def pre_recall(root_path, device, iou=0.5):
                 ]
                 detection_lol.append(detection_list)
                 detection = np.array(detection_list)
-                detection_rect = Rectangle(*detection, image, colour=(0, 255, 255))
                 hold = img_path.split(".")[0].split("/")
-                detection_txt_file = (
-                    "/".join(hold[0:5]) + "/detections/" + hold[-1] + ".txt"
-                )
-                # print('Detection text file', detection_txt_file)
-                # dump_box_to_text([prob] + detection_list, detection_txt_file)
+                if store_predictions:
+                    print("Saving predictions")
+                    # detection_rect = Rectangle(*detection, image, colour=(0, 255, 255))
+                    detection_txt_file = prediction_dir / (hold[-1] + ".txt")
+                    # print("Detection text file", detection_txt_file)
+                    dump_box_to_text([prob] + detection_list, detection_txt_file)
 
-                # for point in detection_rect.get_vertices_points():
-                #     # print(point.x, point.y)
-                #     if ang > 0:
-                #         cv2.circle(image, (point.x, point.y), 2, (255, 0, 0), -1)
-                #     else:
-                #         cv2.circle(image, (point.x, point.y), 2, (0, 255, 0), -1)
+            if create_gt:
+                print("Saving gt")
+                labels = get_lab_ret(xml_path)
+                for cx, cy, w, h, ang_l in labels:
+                    # if flip:
+                    #     cx = image.shape[1] - cx
+                    label = [cx, cy, w, h, ang_l]
+                    # label_lol.append(label)
+                    label_txt_file = gt_dir / (hold[-1] + ".txt")
+                    # print('Detection text file', label_txt_file)
+                    dump_box_to_text(label, label_txt_file)
 
-            # print('im shape', image.shape)
+                    label_rect = Rectangle(*label, image, flip=flip, colour=(0, 255, 0))
+                    label_rect.draw(image)
 
-            # for cx, cy, w, h, ang_l in labels:
-            #     # if flip:
-            #     #     cx = image.shape[1] - cx
-            #     if ang_l > math.pi:
-            #         ang_l = -(2. * math.pi - ang_l)
-            #         # ang_l = -1* ang_l
-            #     label = [cx, cy, w, h, ang_l]
-            #     # label_lol.append(label)
-            #     # label_txt_file = "/".join(hold[0:5]) + '/gt/' + hold[-1] + '.txt'
-            #     # print('Detection text file', label_txt_file)
-            #     # dump_box_to_text(label, label_txt_file)
+            if args.visualize:
+                for box in detection_lol:
+                    cv2.circle(
+                        image, (int(box[0]), int(box[1])), 2, (255, 0, 0), -1
+                    )  # blue
+                    # cv2.circle(image, (int(box[]), int(box[1])), 2, (0, 0, 255), -1) # red
+                    detection_rect = Rectangle(*box, image, colour=(0, 255, 255))
+                    detection_rect.draw(image, flip=False)
 
-            #     label_rect = Rectangle(*label, image, flip=flip, colour=(0, 255, 0))
-            #     label_rect.draw(image)
-            # for point in label_rect.get_vertices_points():
-            #     # print(point.x, point.y)
-            #     if ang_l > 0:
-            #         cv2.circle(image, (point.x, point.y), 2, (255, 0, 0), -1)
-            #     else:
-            #         cv2.circle(image, (point.x, point.y), 2, (0, 255, 0), -1)
-
-            #         cv2.imshow('test {}'.format(v), demo_img)
-            #         key = cv2.waitKey()
-            #         if key == ord('q'):
-            #             break
-            #         elif key == ord('m'):
-            #             print(rbox_iou(detection_list, label))
-            #             cv2.destroyAllWindows()
-            #             break
-
-            # cv2.destroyAllWindows()
-
-            # iou = iou_rotate_calculate(detection, lab_one)
-            # detection_lol = np.vstack(detection_lol[0:1])
-            # # print(detection_lol)
-            # # image, boxes = flip_data(image, detection_lol)
-            # if flip:
-            #     flip_image = cv2.flip(image, 1)
-
-            for box in detection_lol:
-                cv2.circle(
-                    image, (int(box[0]), int(box[1])), 2, (255, 0, 0), -1
-                )  # blue
-                # cv2.circle(image, (int(box[]), int(box[1])), 2, (0, 0, 255), -1) # red
-                detection_rect = Rectangle(*box, image, flip, colour=(0, 255, 255))
-                detection_rect.draw(image, flip)
-
-            # cv2.imshow('flipped', flip_image)
-
-            # for box in detection_lol:
-            #     cv2.circle(image, (int(box[0]), int(box[1])), 2, (255, 0, 0), -1) # blue
-            #     # cv2.circle(image, (int(box[]), int(box[1])), 2, (0, 0, 255), -1) # red
-            #     detection_rect = Rectangle(*box, image, colour=(0, 255, 255))
-            #     detection_rect.draw(image, flip=False)
-            # path_split = img_path.split('/')
-
-            # # print('image path', img_path)
-            splits = img_path.split("/")
-            # print(splits[-1])
-            new_image_path = splits[-1]
-            new_label_path = new_image_path.split(".")[0] + ".xml"
-            # print(new_label_path)
-            # xml_annotations_from_dict(
-            #     input_dict={"rotated_boxes": detection_lol, "classes": ["defect"]*len(detection_lol)},
-            #     output_dir="/home/gexegetic/R-CenterNet/VID_20210119_123453/",
-            #     image_fpath=new_image_path,
-            #     image_shape=image.shape,
-            #     image_fname=splits[-1]
-            #     )
-
-            # cv2.imshow('original', image)
-            # print('Saving image to', "/home/gexegetic/R-CenterNet/flipped/" + new_image_path)
-            # cv2.imwrite("/home/gexegetic/R-CenterNet/flip/" + new_image_path, image)
-            # key = cv2.waitKey(1)
-            # if key == ord('q'):
-            #     break
-            # print("IOU", iou)
-            # ang_err = abs(ang - ang_l)/180
-            # if iou > 0.5:
-            #     num += 1
-            #     miou += iou
-            #     mang += ang_err
-
-        # print('Detection lol', detection_lol)
-        # cv2.imwrite('./convince/frame_' + str(i).zfill(10) + '.jpg', image)
-        cv2.imshow("test", image)
-        key = cv2.waitKey()
-        if key == ord("q"):
-            break
-
-    # return miou/num
+        if args.visualize:
+            cv2.imshow("test", image)
+            key = cv2.waitKey(1)
+            if key == ord("q"):
+                break
 
 
 if __name__ == "__main__":
     args = parse_args()
-    model = ResNet(34)
+    model = ResNet(int(args.model_arch.split("_")[-1]))
     # model = DlaNet(34)
     device = torch.device("cuda")
     model.load_state_dict(torch.load(args.model_path))
     model.eval()
     model.cuda()
 
-    miou = pre_recall(args.dir, device)
+    miou = pre_recall(
+        args.dir,
+        device,
+        store_predictions=args.save_predictions,
+        create_gt=args.create_gt,
+        visualize=args.visualize,
+    )
     # pre_recall('../tests/t3', device)
     # print('Mean average IOU:', miou)
     # pre_recall('./test_frames', device)
