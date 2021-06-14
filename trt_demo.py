@@ -38,6 +38,11 @@ def parse_args():
         help="Model for inference.",
     )
     parser.add_argument(
+        "--input-size",
+        type=int,
+        help="Model for inference.",
+    )
+    parser.add_argument(
         "--display", type=bool, default=False, help="Whether to display detections"
     )
     parser.add_argument(
@@ -415,15 +420,17 @@ def dump_boxes_to_text(bboxes, filename="output.txt", label="defect"):
             f.write("\n")
 
 
-def get_image_data(root_path):
+def get_image_data(root_path, input_size):
     image_paths = [x for x in paths.list_images(root_path)]
     image_paths.sort()
     images = [cv2.imread(path) for path in image_paths]
-    preprocessed_images = [pre_process(image) for image in images]
+    preprocessed_images = [
+        pre_process(image, image_size=input_size) for image in images
+    ]
     return preprocessed_images, images, image_paths
 
 
-def demo(root_path):
+def demo(root_path, input_size):
     # debugger = Debugger(dataset=opt.dataset, ipynb=(opt.debug==3), theme=opt.debugger_theme)
     # model = ResNet(18)
     # model.load_state_dict(torch.load("./last_18_224_1e4.pth"))
@@ -437,10 +444,11 @@ def demo(root_path):
     engine = get_engine(1, "", trt_engine_path, fp16_mode=True)
     context = engine.create_execution_context()
     inputs, outputs, bindings, stream = allocate_buffers(engine)
-    preprocessed_image_data, images, image_paths = get_image_data(root_path)
+    preprocessed_image_data, images, image_paths = get_image_data(root_path, input_size)
 
     # torch_outs = model(images[0][0])
     # ipdb.set_trace()
+    feature_map_size = int(input_size // 4)
     import ipdb
 
     print("Starting inference")
@@ -452,7 +460,7 @@ def demo(root_path):
         output_data = do_inference(
             context, bindings=bindings, inputs=inputs, outputs=outputs, stream=stream
         )
-        output = [np.expand_dims(x.reshape((-1, 56, 56)), 0) for x in output_data]
+        output = [np.expand_dims(x.reshape((-1, 128, 128)), 0) for x in output_data]
         # ipdb.set_trace()
         if args.post_process:
             hm = torch.Tensor(output[0]).sigmoid_()
@@ -508,4 +516,4 @@ def demo(root_path):
 
 if __name__ == "__main__":
     args = parse_args()
-    demo(args.dir)
+    demo(args.dir, args.input_size)
