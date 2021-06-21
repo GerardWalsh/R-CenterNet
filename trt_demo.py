@@ -43,7 +43,10 @@ def parse_args():
         help="Model for inference.",
     )
     parser.add_argument(
-        "--display-detections", type=bool, default=False, help="Whether to display detections"
+        "--display-detections",
+        type=bool,
+        default=False,
+        help="Whether to display detections",
     )
     parser.add_argument(
         "--post-process-output",
@@ -196,11 +199,11 @@ def get_affine_transform(
     return trans
 
 
-
 def post_process(dets, meta):
     dets = dets.detach().cpu().numpy()
     dets = dets.reshape(1, -1, dets.shape[2])
     num_classes = 1
+    print("Outsize in meta", meta["out_height"])
     dets = ctdet_post_process(
         dets.copy(),
         [meta["c"]],
@@ -425,7 +428,7 @@ def demo(root_path, input_size, post_process_output, display_detections):
     engine = get_engine(1, "", trt_engine_path, int8_mode=True)
     context = engine.create_execution_context()
     inputs, outputs, bindings, stream = allocate_buffers(engine)
-    print('Input size:', input_size)
+    print("Input size:", input_size)
     preprocessed_image_data, images, image_paths = get_image_data(root_path, input_size)
 
     # torch_outs = model(images[0][0])
