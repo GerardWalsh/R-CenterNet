@@ -24,6 +24,7 @@ from Loss import _transpose_and_gather_feat
 
 
 def pre_process(image, image_size=224):
+    print('Preprocessing image of size:', image_size)
     height, width = image.shape[0:2]
     inp_height, inp_width = image_size, image_size
     c = np.array([width / 2.0, height / 2.0], dtype=np.float32)

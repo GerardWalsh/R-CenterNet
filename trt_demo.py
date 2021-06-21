@@ -43,10 +43,10 @@ def parse_args():
         help="Model for inference.",
     )
     parser.add_argument(
-        "--display", type=bool, default=False, help="Whether to display detections"
+        "--display-detections", type=bool, default=False, help="Whether to display detections"
     )
     parser.add_argument(
-        "--post-process",
+        "--post-process-output",
         type=bool,
         default=False,
         help="Whether to process network output",
@@ -195,25 +195,6 @@ def get_affine_transform(
         trans = cv2.getAffineTransform(np.float32(src), np.float32(dst))
     return trans
 
-
-def pre_process_image(image):
-    height, width = image.shape[0:2]
-    inp_height, inp_width = 224, 224
-    c = np.array([width / 2.0, height / 2.0], dtype=np.float32)
-    s = max(height, width) * 1.0
-    trans_input = get_affine_transform(c, s, 0, [inp_width, inp_height])
-    inp_image = cv2.warpAffine(
-        image, trans_input, (inp_width, inp_height), flags=cv2.INTER_LINEAR
-    )
-
-    inp_image = (inp_image / 255.0).astype(np.float32)
-
-    return inp_image.transpose(2, 0, 1).reshape(1, 3, inp_height, inp_width), {
-        "c": c,
-        "s": s,
-        "out_height": inp_height // 4,
-        "out_width": inp_width // 4,
-    }
 
 
 def post_process(dets, meta):
@@ -430,7 +411,7 @@ def get_image_data(root_path, input_size):
     return preprocessed_images, images, image_paths
 
 
-def demo(root_path, input_size):
+def demo(root_path, input_size, post_process_output, display_detections):
     # debugger = Debugger(dataset=opt.dataset, ipynb=(opt.debug==3), theme=opt.debugger_theme)
     # model = ResNet(18)
     # model.load_state_dict(torch.load("./last_18_224_1e4.pth"))
@@ -444,6 +425,7 @@ def demo(root_path, input_size):
     engine = get_engine(1, "", trt_engine_path, int8_mode=True)
     context = engine.create_execution_context()
     inputs, outputs, bindings, stream = allocate_buffers(engine)
+    print('Input size:', input_size)
     preprocessed_image_data, images, image_paths = get_image_data(root_path, input_size)
 
     # torch_outs = model(images[0][0])
@@ -456,6 +438,7 @@ def demo(root_path, input_size):
     for data in zip(preprocessed_image_data, images, image_paths):
         (preprocessed_input, meta), image, image_path = data  # transpose(2, 0, 1)
         # ipdb.set_trace()
+        print(meta)
         inputs[0].host = preprocessed_input[0].numpy().reshape(-1)
         output_data = do_inference(
             context, bindings=bindings, inputs=inputs, outputs=outputs, stream=stream
@@ -465,7 +448,7 @@ def demo(root_path, input_size):
             for x in output_data
         ]
         # ipdb.set_trace()
-        if args.post_process:
+        if post_process_output:
             hm = torch.Tensor(output[0]).sigmoid_()
             ang = torch.Tensor(output[2]).relu_()
             wh = torch.Tensor(output[1])
@@ -499,7 +482,7 @@ def demo(root_path, input_size):
             # ipdb.set_trace()
             detection_txt_file_path = image_path.split(".")[0] + ".txt"
             dump_boxes_to_text(detection_lol, detection_txt_file_path)
-            if args.display:
+            if True:
                 detection_lol = []
                 for detection in detections:
                     class_name, lx, ly, rx, ry, ang, prob = detection
@@ -532,4 +515,5 @@ def demo(root_path, input_size):
 
 if __name__ == "__main__":
     args = parse_args()
-    demo(args.dir, args.input_size)
+    print(args)
+    demo(args.dir, args.input_size, args.post_process_output, args.display_detections)
