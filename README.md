@@ -23,15 +23,6 @@ At the request of readers, 2.0 was subsequently updated：2.0
  ~~~
  2.0 and the data/airplane, imgs, ret folders are not required. If you just want to get started quickly, 1.0 is enough。
 
-#### demo
-* R-DLADCN(this code)(How to complie dcn refer to the original code of [CenterNet](https://github.com/xingyizhou/centernet))
-    * ![image](ret/R-DLADCN.jpg)
-* R-ResDCN(just replace cnn in resnet with dcn)
-    * ![image](ret/R-ResDCN.jpg)
-* R-DLANet(not use dcn if you don't know how to complie dcn)
-    * ![image](ret/R-DLANet.jpg)
-* DLADCN.jpg
-    * ![image](ret/DLADCN.jpg)
 
 #### notes
  * Refactored the original [code](https://github.com/xingyizhou/centernet) to make code more concise.
