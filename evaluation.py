@@ -7,6 +7,7 @@ import pathlib
 
 import cv2
 import torch
+from torch2trt import TRTModule
 import evaluation
 import numpy as np
 from imutils import paths
@@ -124,7 +125,7 @@ def dump_box_to_text(box, filename="tx.txt", label="defect"):
         outfile.write("\n")
 
 
-def process(images, return_time=False):
+def process(model, images, return_time=False):
     with torch.no_grad():
         output = model(images)
         hm = output["hm"].sigmoid_()
@@ -148,12 +149,12 @@ def process(images, return_time=False):
         return output, dets
 
 
-def get_pre_ret(img_path, device, conf=0.3, input_size=224):
+def get_pre_ret(model, img_path, device, conf=0.3, input_size=224):
     image = cv2.imread(img_path)
     # image = cv2.resize(image, (960, 540))
     images, meta = pre_process(image, image_size=input_size)
     images = images.to(device)
-    output, dets, forward_time = process(images, return_time=True)
+    output, dets, forward_time = process(model, images, return_time=True)
 
     dets = post_process(dets, meta)
     ret = merge_outputs(dets)
@@ -170,6 +171,7 @@ def get_pre_ret(img_path, device, conf=0.3, input_size=224):
 
 
 def pre_recall(
+    model,
     root_path,
     device,
     input_size,
@@ -202,7 +204,9 @@ def pre_recall(
             img_path = os.path.join(root_path, img)
             # print('Image filepath', img_path)
             xml_path = os.path.join(root_path, img.split(".")[0] + ".xml")
-            detections, image = get_pre_ret(img_path, device, input_size=input_size)
+            detections, image = get_pre_ret(
+                model, img_path, device, input_size=input_size
+            )
             if flip:
                 image = cv2.flip(image, 1)
 
@@ -258,14 +262,19 @@ def pre_recall(
 
 if __name__ == "__main__":
     args = parse_args()
-    model = ResNet(int(args.model_arch.split("_")[-1]), head_conv=args.head_conv)
-    # model = DlaNet(34)
+
     device = torch.device("cuda")
-    model.load_state_dict(torch.load(args.model_path))
-    model.eval()
-    model.cuda()
+
+    # model = ResNet(int(args.model_arch.split("_")[-1]), head_conv=args.head_conv)
+    # model.load_state_dict(torch.load(args.model_path))
+    # model.eval()
+
+    model_trt = TRTModule()
+    model_trt.load_state_dict(torch.load(args.model_path))
+    model_trt.cuda()
 
     miou = pre_recall(
+        model_trt,
         args.dir,
         device,
         input_size=args.input_size,
