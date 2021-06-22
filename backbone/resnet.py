@@ -1,3 +1,5 @@
+from collections import namedtuple
+
 import torch.nn as nn
 
 # sys.path.append(r"../backbone")
@@ -215,7 +217,9 @@ class Creat_ResNet(nn.Module):
         # import ipdb
 
         # ipdb.set_trace()
-        return ret
+        # return
+        NT = namedtuple("output", self.heads)
+        return NT(*[self.__getattr__(head)(x) for head in self.heads])
 
 
 resnet_spec = {
