@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 import math
 import time
 import os
@@ -95,6 +96,21 @@ if __name__ == "__main__":
     model_trt = torch2trt(model, [x])
     print("INFO: Saving optimised model . . . . .")
     torch.save(model_trt.state_dict(), "centernet_optimised.pth")
+
+    testing_runs = 20
+    print("INFO: Testing standard inference . . . . .")
+    start_time = datetime.time()
+    for i in range(testing_runs):
+        _ = model(x)
+    end_time = datetime.time()
+    print(f"FPS: {(end_time - start_time) / testing_runs}")
+
+    print("INFO: Testing optimised inference . . . . .")
+    start_time = datetime.time()
+    for i in range(testing_runs):
+        _ = model_trt(x)
+    end_time = datetime.time()
+    print(f"FPS: {(end_time - start_time) / testing_runs}")
 
     # miou = pre_recall(
     #     args.dir,
