@@ -47,24 +47,30 @@ def parse_args():
     #     default=0.5,
     #     help="Threshold upon which to discard detections.",
     # )
-    # parser.add_argument(
-    #     "--input-size",
-    #     type=int,
-    #     default=512,
-    #     help="Size of image model was trained on.",
-    # )
+    parser.add_argument(
+        "--input-size",
+        type=int,
+        default=512,
+        help="Size of image model was trained on.",
+    )
     parser.add_argument(
         "--model-arch",
         type=str,
         default="resnet_18",
         help="Model architecture type.",
     )
-    # parser.add_argument(
-    #     "--save-predictions",
-    #     type=bool,
-    #     default=False,
-    #     help="Whether to store model predictions.",
-    # )
+    parser.add_argument(
+        "--head-conv",
+        type=int,
+        default=256,
+        help="Model architecture type.",
+    )
+    parser.add_argument(
+        "--int8-mode",
+        type=bool,
+        default=False,
+        help="Whether to use int8 precision.",
+    )
     # parser.add_argument(
     #     "--create-gt",
     #     type=bool,
@@ -83,7 +89,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     print("INFO: Creating model . . . . .")
-    model = ResNet(int(args.model_arch.split("_")[-1]))
+    model = ResNet(int(args.model_arch.split("_")[-1]), head_conv=args.head_conv)
     device = torch.device("cuda")
     model.load_state_dict(torch.load(args.model_path))
     model.eval()
@@ -91,9 +97,9 @@ if __name__ == "__main__":
     print("INFO: Model initialised and in GPU memory . . . . .")
 
     print("INFO: Creating dummy input . . . . .")
-    x = torch.ones((1, 3, 512, 512)).cuda()
+    x = torch.ones((1, 3, args.input_size, args.input_size)).cuda()
     print("INFO: Optimising model . . . . .")
-    model_trt = torch2trt(model, [x])
+    model_trt = torch2trt(model, [x], int8_mode=args.int8_mode)
     print("INFO: Saving optimised model . . . . .")
     torch.save(model_trt.state_dict(), "centernet_optimised.pth")
 
@@ -103,14 +109,14 @@ if __name__ == "__main__":
     for i in range(testing_runs):
         _ = model(x)
     end_time = time.time()
-    print(f"FPS: {(end_time - start_time) / testing_runs}")
+    print(f"FPS: {testing_runs / (end_time - start_time)}")
 
     print("INFO: Testing optimised inference . . . . .")
     start_time = time.time()
     for i in range(testing_runs):
         _ = model_trt(x)
     end_time = time.time()
-    print(f"FPS: {(end_time - start_time) / testing_runs}")
+    print(f"FPS: {testing_runs / (end_time - start_time)}")
 
     # miou = pre_recall(
     #     args.dir,
