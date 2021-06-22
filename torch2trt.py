@@ -7,6 +7,7 @@ import pathlib
 
 import cv2
 import torch
+from torch2trt import torch2trt
 import evaluation
 import numpy as np
 from imutils import paths
@@ -86,6 +87,9 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(args.model_path))
     model.eval()
     model.cuda()
+
+    x = torch.ones((1, 3, 512, 512)).cuda()
+    model_trt = torch2trt(model, [x])
 
     # miou = pre_recall(
     #     args.dir,
