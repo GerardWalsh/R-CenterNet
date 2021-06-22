@@ -90,6 +90,7 @@ if __name__ == "__main__":
 
     x = torch.ones((1, 3, 512, 512)).cuda()
     model_trt = torch2trt(model, [x])
+    torch.save(model_trt.state_dict(), "centernet_optimised.pth")
 
     # miou = pre_recall(
     #     args.dir,
