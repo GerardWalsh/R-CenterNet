@@ -32,8 +32,8 @@ from resnet import ResNet
 image_output_meta = {
     "c": np.array([960.0, 540.0], dtype=np.float32),
     "s": 1920.0,
-    "out_height": 128,
-    "out_width": 128,
+    "out_height": 56,
+    "out_width": 56,
 }
 
 
@@ -126,9 +126,7 @@ best_test_loss = np.inf
 start = time.perf_counter()
 
 # Create directory for training run
-training_directory_name = pathlib.Path(
-    f'{date_stamp}_{config["model"]}_{config["input_size"]}_epochs:{config["epochs"]}_lr:{config["learning_rate"]}_{config["optimizer"]}_{centered}_batch_size:{config["batch_size"]}'
-)
+training_directory_name = pathlib.Path(f"{date_stamp}")
 training_directory_name.mkdir(parents=True, exist_ok=True)
 
 for epoch in range(num_epochs):

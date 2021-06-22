@@ -142,11 +142,10 @@ def process(images, return_time=False):
         return output, dets
 
 
-def get_pre_ret(img_path, device, conf=0.3):
+def get_pre_ret(img_path, device, conf=0.3, input_size=224):
     image = cv2.imread(img_path)
     # image = cv2.resize(image, (960, 540))
-    images, meta = pre_process(image, image_size=512)
-    # print(meta)
+    images, meta = pre_process(image, image_size=input_size)
     images = images.to(device)
     output, dets, forward_time = process(images, return_time=True)
 
@@ -167,6 +166,7 @@ def get_pre_ret(img_path, device, conf=0.3):
 def pre_recall(
     root_path,
     device,
+    input_size,
     iou=0.5,
     store_predictions=False,
     create_gt=False,
@@ -195,7 +195,7 @@ def pre_recall(
             img_path = os.path.join(root_path, img)
             # print('Image filepath', img_path)
             xml_path = os.path.join(root_path, img.split(".")[0] + ".xml")
-            detections, image = get_pre_ret(img_path, device)
+            detections, image = get_pre_ret(img_path, device, input_size=input_size)
             if flip:
                 image = cv2.flip(image, 1)
 
@@ -244,7 +244,7 @@ def pre_recall(
 
         if args.visualize:
             cv2.imshow("test", image)
-            key = cv2.waitKey(1)
+            key = cv2.waitKey()
             if key == ord("q"):
                 break
 
@@ -261,6 +261,7 @@ if __name__ == "__main__":
     miou = pre_recall(
         args.dir,
         device,
+        input_size=args.input_size,
         store_predictions=args.save_predictions,
         create_gt=args.create_gt,
         visualize=args.visualize,

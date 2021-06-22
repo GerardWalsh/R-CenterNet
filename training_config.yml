@@ -1,6 +1,6 @@
 # training:
   model: resnet_34
-  input_size: 512
+  input_size: 416
   optimizer: Adam
   epochs: 50
   batch_size: 6
