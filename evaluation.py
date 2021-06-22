@@ -128,14 +128,15 @@ def dump_box_to_text(box, filename="tx.txt", label="defect"):
 def process(model, images, return_time=False):
     with torch.no_grad():
         output = model(images)
-        hm = output["hm"].sigmoid_()
+        # import ipdb;ipdb.set_trace()
+        hm = output[0].sigmoid_()
         #   print('Heatmap shape', hm.shape)
         #   print('Heatmap ', hm)
-        ang = output["ang"]  # .relu_()
+        ang = output[2]  # .relu_()
         #   print("angle shape in process", ang.shape)
-        wh = output["wh"]
+        wh = output[1]
         #   print("WH shape in process", wh.shape)
-        reg = output["reg"]
+        reg = output[3]
         #   print("REG shape in process", reg.shape)
 
         #   torch.cuda.synchronize()
@@ -255,7 +256,7 @@ def pre_recall(
 
         if args.visualize:
             cv2.imshow("test", image)
-            key = cv2.waitKey()
+            key = cv2.waitKey(1)
             if key == ord("q"):
                 break
 
