@@ -81,15 +81,19 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    print("INFO: Creating model . . . . .")
     model = ResNet(int(args.model_arch.split("_")[-1]))
-    # model = DlaNet(34)
     device = torch.device("cuda")
     model.load_state_dict(torch.load(args.model_path))
     model.eval()
     model.cuda()
+    print("INFO: Model initialised and in GPU memory . . . . .")
 
+    print("INFO: Creating dummy input . . . . .")
     x = torch.ones((1, 3, 512, 512)).cuda()
+    print("INFO: Optimising model . . . . .")
     model_trt = torch2trt(model, [x])
+    print("INFO: Saving optimised model . . . . .")
     torch.save(model_trt.state_dict(), "centernet_optimised.pth")
 
     # miou = pre_recall(
