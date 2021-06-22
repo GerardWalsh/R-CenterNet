@@ -99,17 +99,17 @@ if __name__ == "__main__":
 
     testing_runs = 20
     print("INFO: Testing standard inference . . . . .")
-    start_time = datetime.time()
+    start_time = time.time()
     for i in range(testing_runs):
         _ = model(x)
-    end_time = datetime.time()
+    end_time = time.time()
     print(f"FPS: {(end_time - start_time) / testing_runs}")
 
     print("INFO: Testing optimised inference . . . . .")
-    start_time = datetime.time()
+    start_time = time.time()
     for i in range(testing_runs):
         _ = model_trt(x)
-    end_time = datetime.time()
+    end_time = time.time()
     print(f"FPS: {(end_time - start_time) / testing_runs}")
 
     # miou = pre_recall(
