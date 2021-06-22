@@ -75,6 +75,12 @@ def parse_args():
         default=False,
         help="Whether to create gt labels.",
     )
+    parser.add_argument(
+        "--head-conv",
+        type=int,
+        default=256,
+        help="Conv filters in regression heads.",
+    )
     return parser.parse_args()
 
 
@@ -175,6 +181,7 @@ def pre_recall(
     imgs = paths.list_images(root_path)
     ll = [x for x in imgs]
     ll.sort()
+    print(f"Got {len(ll)} images")
 
     flip = False
     # Create directory for predictions
@@ -251,7 +258,7 @@ def pre_recall(
 
 if __name__ == "__main__":
     args = parse_args()
-    model = ResNet(int(args.model_arch.split("_")[-1]))
+    model = ResNet(int(args.model_arch.split("_")[-1]), head_conv=args.head_conv)
     # model = DlaNet(34)
     device = torch.device("cuda")
     model.load_state_dict(torch.load(args.model_path))
