@@ -185,7 +185,6 @@ def pre_recall(
     ll = [x for x in imgs]
     ll.sort()
     print(f"Got {len(ll)} images")
-
     flip = False
     # Create directory for predictions
     if store_predictions:
@@ -196,7 +195,7 @@ def pre_recall(
         gt_dir = pathlib.Path(root_path) / "gt"
         gt_dir.mkdir()
         print(f"Created {str(gt_dir)} for saving model output.")
-
+    start = time.time()
     for i, img in enumerate(ll):
         img = img.split("/")[-1]
         if img.split(".")[-1] == "jpg":
@@ -259,7 +258,7 @@ def pre_recall(
             key = cv2.waitKey(1)
             if key == ord("q"):
                 break
-
+    return len(ll) / (time.time() - start)
 
 if __name__ == "__main__":
     args = parse_args()
@@ -274,7 +273,7 @@ if __name__ == "__main__":
     model_trt.load_state_dict(torch.load(args.model_path))
     model_trt.cuda()
 
-    miou = pre_recall(
+    FPS = pre_recall(
         model_trt,
         args.dir,
         device,
@@ -283,6 +282,7 @@ if __name__ == "__main__":
         create_gt=args.create_gt,
         visualize=args.visualize,
     )
+    print(FPS)
     # pre_recall('../tests/t3', device)
     # print('Mean average IOU:', miou)
     # pre_recall('./test_frames', device)
