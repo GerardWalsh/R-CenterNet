@@ -61,8 +61,7 @@ opts = {
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 use_gpu = torch.cuda.is_available()
-model = ResNet(int(config["model"].split("_")[-1]))
-
+model = ResNet(int(config["model"].split("_")[-1]), head_conv=int(config["head_conv"]))
 
 loss_weight = {"hm_weight": 1, "wh_weight": 0.1, "ang_weight": 0.5, "reg_weight": 0.1}
 criterion = CtdetLoss(loss_weight)

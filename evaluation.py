@@ -251,7 +251,7 @@ def pre_recall(
 
 if __name__ == "__main__":
     args = parse_args()
-    model = ResNet(int(args.model_arch.split("_")[-1]))
+    model = ResNet(int(args.model_arch.split("_")[-1]), head_conv=64)
     # model = DlaNet(34)
     device = torch.device("cuda")
     model.load_state_dict(torch.load(args.model_path))
