@@ -139,7 +139,7 @@ def process(images, return_time=False):
 
         #   torch.cuda.synchronize()
         forward_time = time.time()
-        dets = ctdet_decode(hm, wh, ang, reg=reg, K=100)  # K
+        dets = ctdet_decode(hm, wh, ang, reg=reg, K=30)  # K
     #   print('Heatmap shape', hm.shape)
 
     if return_time:
@@ -222,7 +222,7 @@ def pre_recall(
                     print("Saving predictions")
                     # detection_rect = Rectangle(*detection, image, colour=(0, 255, 255))
                     detection_txt_file = prediction_dir / (hold[-1] + ".txt")
-                    # print("Detection text file", detection_txt_file)
+                    print("Detection text file", detection_txt_file)
                     dump_box_to_text([prob] + detection_list, detection_txt_file)
 
             if create_gt:
