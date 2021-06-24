@@ -152,7 +152,13 @@ def get_pre_ret(img_path, device, conf=0.3, input_size=224):
     image = cv2.imread(img_path)
     # image = cv2.resize(image, (960, 540))
     images, meta = pre_process(image, image_size=input_size)
+    # print(type(images))
+    images = images.half()
+    # import ipdb
+
+    # ipdb.set_trace()
     images = images.to(device)
+    # images = image.half()
     output, dets, forward_time = process(images, return_time=True)
 
     dets = post_process(dets, meta)
@@ -264,6 +270,7 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(args.model_path))
     model.eval()
     model.cuda()
+    model.half()
 
     miou = pre_recall(
         args.dir,

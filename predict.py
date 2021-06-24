@@ -201,6 +201,7 @@ def ctdet_decode_sample(heat, wh, ang, reg, K=100):
 
 
 def post_process(dets, meta):
+    dets = dets.half()
     dets = dets.detach().cpu().numpy()
     dets = dets.reshape(1, -1, dets.shape[2])
     num_classes = 1
@@ -287,12 +288,14 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load("best.pth"))
     model.eval()
     model.cuda()
+    model.half()
     for image_name in [os.path.join("imgz", f) for f in os.listdir("imgz")]:
         #        image_name = 'data/images/011.jpg'
         # print(image_name)
         if image_name.split(".")[-1] == "jpg":
             image = cv2.imread(image_name)
             images, meta = pre_process(image)
+            images = images.half()
             images = images.to(device)
             output, dets, forward_time = process(images, return_time=True)
 
