@@ -154,22 +154,27 @@ def transform_preds(coords, center, scale, output_size):
 def ctdet_post_process(dets, c, s, h, w, num_classes):
     # dets: batch x max_dets x dim
     # return 1-based class det dict
+    # import ipdb
+
+    # ipdb.set_trace()
     ret = []
-    for i in range(dets.shape[0]):
-        top_preds = {}
-        dets[i, :, :2] = transform_preds(dets[i, :, 0:2], c[i], s[i], (w, h))
-        dets[i, :, 2:4] = transform_preds(dets[i, :, 2:4], c[i], s[i], (w, h))
-        classes = dets[i, :, -1]
-        for j in range(num_classes):
-            inds = classes == j
-            top_preds[j + 1] = np.concatenate(
-                [
-                    dets[i, inds, :4].astype(np.float32),
-                    dets[i, inds, 4:6].astype(np.float32),
-                ],
-                axis=1,
-            ).tolist()
-        ret.append(top_preds)
+    i = 0
+    j = 0
+    # for i in range(dets.shape[0]):
+    top_preds = {}
+    dets[i, :, :2] = transform_preds(dets[i, :, 0:2], c[i], s[i], (w, h))
+    dets[i, :, 2:4] = transform_preds(dets[i, :, 2:4], c[i], s[i], (w, h))
+    classes = dets[i, :, -1]
+    # for j in range(num_classes):
+    inds = classes == j
+    top_preds[j + 1] = np.concatenate(
+        [
+            dets[i, inds, :4].astype(np.float32),
+            dets[i, inds, 4:6].astype(np.float32),
+        ],
+        axis=1,
+    ).tolist()
+    ret.append(top_preds)
     return ret
 
 
@@ -196,7 +201,8 @@ def ctdet_decode_sample(heat, wh, ang, reg, K=100):
 
 
 def post_process(dets, meta):
-    dets = dets.detach().cpu().numpy()
+    dets = dets.half()
+    dets = dets.cpu().numpy()
     dets = dets.reshape(1, -1, dets.shape[2])
     num_classes = 1
     dets = ctdet_post_process(
@@ -282,12 +288,14 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load("best.pth"))
     model.eval()
     model.cuda()
+    model.half()
     for image_name in [os.path.join("imgz", f) for f in os.listdir("imgz")]:
         #        image_name = 'data/images/011.jpg'
         # print(image_name)
         if image_name.split(".")[-1] == "jpg":
             image = cv2.imread(image_name)
             images, meta = pre_process(image)
+            images = images.half()
             images = images.to(device)
             output, dets, forward_time = process(images, return_time=True)
 
