@@ -71,6 +71,13 @@ def parse_args():
         default=False,
         help="Whether to use int8 precision.",
     )
+    parser.add_argument(
+        "--fp16-mode",
+        type=bool,
+        default=False,
+        help="Whether to use half precision.",
+    )
+
     # parser.add_argument(
     #     "--create-gt",
     #     type=bool,
@@ -94,12 +101,13 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(args.model_path))
     model.eval()
     model.cuda()
+    model.half()
     print("INFO: Model initialised and in GPU memory . . . . .")
 
     print("INFO: Creating dummy input . . . . .")
-    x = torch.ones((1, 3, args.input_size, args.input_size)).cuda()
+    x = torch.ones((1, 3, args.input_size, args.input_size)).cuda().half()
     print("INFO: Optimising model . . . . .")
-    model_trt = torch2trt(model, [x], int8_mode=args.int8_mode)
+    model_trt = torch2trt(model, [x], int8_mode=args.int8_mode, fp16_mode=args.fp16_mode)
     print("INFO: Saving optimised model . . . . .")
     torch.save(model_trt.state_dict(), "centernet_optimised.pth")
 
