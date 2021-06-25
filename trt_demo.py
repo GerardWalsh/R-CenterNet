@@ -485,7 +485,7 @@ def demo(root_path, input_size, post_process_output, display_detections):
             # ipdb.set_trace()
             detection_txt_file_path = image_path.split(".")[0] + ".txt"
             dump_boxes_to_text(detection_lol, detection_txt_file_path)
-            if True:
+            if display_detections:
                 detection_lol = []
                 for detection in detections:
                     class_name, lx, ly, rx, ry, ang, prob = detection
