@@ -414,7 +414,9 @@ def get_image_data(root_path, input_size):
     return preprocessed_images, images, image_paths
 
 
-def demo(root_path, input_size, post_process_output, display_detections):
+def demo(
+    root_path, input_size, post_process_output, display_detections, fp16_mode=True
+):
     # debugger = Debugger(dataset=opt.dataset, ipynb=(opt.debug==3), theme=opt.debugger_theme)
     # model = ResNet(18)
     # model.load_state_dict(torch.load("./last_18_224_1e4.pth"))
@@ -425,7 +427,7 @@ def demo(root_path, input_size, post_process_output, display_detections):
 
     trt_engine_path = str(args.model_path)
 
-    engine = get_engine(1, "", trt_engine_path, int8_mode=True)
+    engine = get_engine(1, "", trt_engine_path, fp16_mode=fp16_mode)
     context = engine.create_execution_context()
     inputs, outputs, bindings, stream = allocate_buffers(engine)
     print("Input size:", input_size)
