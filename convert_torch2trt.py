@@ -29,24 +29,12 @@ from resnet import ResNet
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    # parser.add_argument(
-    #     "--dir",
-    #     type=str,
-    #     required=True,
-    #     help="The path to the test images.",
-    # )
     parser.add_argument(
         "--model-path",
         type=str,
         required=True,
         help="The path to model to perform inference with.",
     )
-    # parser.add_argument(
-    #     "--confidence-threshold",
-    #     type=float,
-    #     default=0.5,
-    #     help="Threshold upon which to discard detections.",
-    # )
     parser.add_argument(
         "--input-size",
         type=int,
@@ -77,19 +65,6 @@ def parse_args():
         default=False,
         help="Whether to use half precision.",
     )
-
-    # parser.add_argument(
-    #     "--create-gt",
-    #     type=bool,
-    #     default=False,
-    #     help="Whether to create gt labels.",
-    # )
-    # parser.add_argument(
-    #     "--visualize",
-    #     type=bool,
-    #     default=False,
-    #     help="Whether to create gt labels.",
-    # )
     return parser.parse_args()
 
 
@@ -101,11 +76,10 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(args.model_path))
     model.eval()
     model.cuda()
-    model.half()
     print("INFO: Model initialised and in GPU memory . . . . .")
 
     print("INFO: Creating dummy input . . . . .")
-    x = torch.ones((1, 3, args.input_size, args.input_size)).cuda().half()
+    x = torch.ones((1, 3, args.input_size, args.input_size)).cuda()
     print("INFO: Optimising model . . . . .")
     model_trt = torch2trt(model, [x], int8_mode=args.int8_mode, fp16_mode=args.fp16_mode)
     print("INFO: Saving optimised model . . . . .")
@@ -125,17 +99,3 @@ if __name__ == "__main__":
         _ = model_trt(x)
     end_time = time.time()
     print(f"FPS: {testing_runs / (end_time - start_time)}")
-
-    # miou = pre_recall(
-    #     args.dir,
-    #     device,
-    #     input_size=args.input_size,
-    #     store_predictions=args.save_predictions,
-    #     create_gt=args.create_gt,
-    #     visualize=args.visualize,
-    # )
-    # pre_recall('../tests/t3', device)
-    # print('Mean average IOU:', miou)
-    # pre_recall('./test_frames', device)
-    # F1 = (2*p*r)/(p+r)
-    # print(F1)
