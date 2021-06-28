@@ -203,7 +203,7 @@ def post_process(dets, meta):
     dets = dets.detach().cpu().numpy()
     dets = dets.reshape(1, -1, dets.shape[2])
     num_classes = 1
-    print("Outsize in meta", meta["out_height"])
+    # print("Outsize in meta", meta["out_height"])
     dets = ctdet_post_process(
         dets.copy(),
         [meta["c"]],
@@ -427,23 +427,23 @@ def demo(
 
     trt_engine_path = str(args.model_path)
 
-    engine = get_engine(1, "", trt_engine_path, fp16_mode=fp16_mode)
+    engine = get_engine(1, "", trt_engine_path, fp16_mode=True)
     context = engine.create_execution_context()
     inputs, outputs, bindings, stream = allocate_buffers(engine)
-    print("Input size:", input_size)
+    # print("Input size:", input_size)
     preprocessed_image_data, images, image_paths = get_image_data(root_path, input_size)
 
     # torch_outs = model(images[0][0])
     # ipdb.set_trace()
     feature_map_size = int(input_size // 4)
-    import ipdb
+    # import ipdb
 
-    print("Starting inference")
+    # print("Starting inference")
     t = perf_counter()
     for data in zip(preprocessed_image_data, images, image_paths):
         (preprocessed_input, meta), image, image_path = data  # transpose(2, 0, 1)
         # ipdb.set_trace()
-        print(meta)
+        # print(meta)
         inputs[0].host = preprocessed_input[0].numpy().reshape(-1)
         output_data = do_inference(
             context, bindings=bindings, inputs=inputs, outputs=outputs, stream=stream
@@ -519,6 +519,7 @@ def demo(
 
 
 if __name__ == "__main__":
+    import cProfile
     args = parse_args()
     print(args)
     demo(args.dir, args.input_size, args.post_process_output, args.display_detections)
