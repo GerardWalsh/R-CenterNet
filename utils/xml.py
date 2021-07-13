@@ -139,13 +139,15 @@ def append_xml_object_to_annotation(robndbox, object_class, annotation):
     object_robndbox_h.text = str(robndbox[3])
     # print('In this weird fnc',  str(robndbox[4]))
     object_robndbox_angle.text = str(robndbox[4])
-    
+
     return reform_xml_from_string(stringify_xml(annotation))
 
 
-def xml_annotations_from_dict(input_dict, output_dir, image_fpath, image_shape, image_fname=None):
-    """ Takes the detections of a single frame as for a 1 box example:
-        {"rotated_boxes": [[cx, cy, w, h, angle]], "classes": ["defect"]}"""
+def xml_annotations_from_dict(
+    input_dict, output_dir, image_fpath, image_shape, image_fname=None
+):
+    """Takes the detections of a single frame as for a 1 box example:
+    {"rotated_boxes": [[cx, cy, w, h, angle]], "classes": ["defect"]}"""
 
     image_height, image_width, n_channels = image_shape
 
@@ -153,7 +155,6 @@ def xml_annotations_from_dict(input_dict, output_dir, image_fpath, image_shape, 
     # print("boxes passed to Jan's func", boxes)
     # boxes = np.array(boxes).astype(int)
 
-    
     if not image_fname:
         target_image_fname = os.path.basename(image_fpath)
     else:
@@ -180,40 +181,40 @@ def xml_annotations_from_dict(input_dict, output_dir, image_fpath, image_shape, 
         label = input_dict["classes"][i]
         # print('Angle', boxes[4])
         annotation = append_xml_object_to_annotation(boxes[i], label, annotation)
-        
+
     if not image_fname:
         xml_filepath = image_fpath.replace(".jpg", ".xml")
     else:
         xml_filepath = image_fname.replace(".jpg", ".xml")
-    print('Saving XML to path', output_dir + xml_filepath)
+    # print('Saving XML to path', output_dir + xml_filepath)
     save_prettified_xml(output_dir + xml_filepath, annotation)
 
 
-def get_lab_ret(xml_path):    
+def get_lab_ret(xml_path):
     ret = []
     # print(xml_path)
-    with open(xml_path, 'r', encoding='UTF-8') as fp:
+    with open(xml_path, "r", encoding="UTF-8") as fp:
         ob = []
         flag = 0
         for p in fp:
-            key = p.split('>')[0].split('<')[1]
-            if key == 'cx':
-                ob.append(p.split('>')[1].split('<')[0])
-            if key == 'cy':
-                ob.append(p.split('>')[1].split('<')[0])
-            if key == 'w':
-                ob.append(p.split('>')[1].split('<')[0])
-            if key == 'h':
-                ob.append(p.split('>')[1].split('<')[0])
-            if key == 'angle':
-                ob.append(p.split('>')[1].split('<')[0])
+            key = p.split(">")[0].split("<")[1]
+            if key == "cx":
+                ob.append(p.split(">")[1].split("<")[0])
+            if key == "cy":
+                ob.append(p.split(">")[1].split("<")[0])
+            if key == "w":
+                ob.append(p.split(">")[1].split("<")[0])
+            if key == "h":
+                ob.append(p.split(">")[1].split("<")[0])
+            if key == "angle":
+                ob.append(p.split(">")[1].split("<")[0])
                 flag = 1
             if flag == 1:
                 x1 = float(ob[0])
                 y1 = float(ob[1])
                 w = float(ob[2])
                 h = float(ob[3])
-                angle = float(ob[4]) # reading in radians
+                angle = float(ob[4])  # reading in radians
                 # print('Reading in angle from XML:', angle)
 
                 bbox = [x1, y1, w, h, angle]  # COCO 对应格式[x,y,w,h]

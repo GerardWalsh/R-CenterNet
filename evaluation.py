@@ -225,11 +225,29 @@ def pre_recall(
                 detection = np.array(detection_list)
                 hold = img_path.split(".")[0].split("/")
                 if store_predictions:
-                    print("Saving predictions")
-                    # detection_rect = Rectangle(*detection, image, colour=(0, 255, 255))
-                    detection_txt_file = prediction_dir / (hold[-1] + ".txt")
-                    print("Detection text file", detection_txt_file)
-                    dump_box_to_text([prob] + detection_list, detection_txt_file)
+                    # print("Saving predictions")
+                    # # detection_rect = Rectangle(*detection, image, colour=(0, 255, 255))
+                    # detection_txt_file = prediction_dir / (hold[-1] + ".txt")
+                    # print("Detection text file", detection_txt_file)
+                    # dump_box_to_text([prob] + detection_list, detection_txt_file)
+                    # import ipdb
+
+                    # ipdb.set_trace()
+
+                    splits = img_path.split("/")
+                    # print(splits[-1])
+                    new_image_path = splits[-1]
+                    # new_label_path = new_image_path.split(".")[0] + ".xml"
+                    xml_annotations_from_dict(
+                        input_dict={
+                            "rotated_boxes": detection_lol,
+                            "classes": ["defect"] * len(detection_lol),
+                        },
+                        output_dir=root_path,
+                        image_fpath=new_image_path,
+                        image_shape=image.shape,
+                        image_fname=splits[-1],
+                    )
 
             if create_gt:
                 print("Saving gt")
@@ -256,8 +274,8 @@ def pre_recall(
                     detection_rect.draw(image, flip=False)
 
         if args.visualize:
-            cv2.imshow("test", image)
-            key = cv2.waitKey()
+            cv2.imshow("test", cv2.resize(image, (1920, 1080)))
+            key = cv2.waitKey(1)
             if key == ord("q"):
                 break
 
